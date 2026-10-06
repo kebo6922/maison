@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning Maison – Partagé</title>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, push, set, onValue, update, remove }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ══════════════════════════════════════════════════════
+  // 🔧 CONFIGURATION FIREBASE — À REMPLACER PAR LES VÔTRES
+  // Créer un projet sur https://console.firebase.google.com
+  // Aller dans Project Settings > General > Your apps > Config
+  // ══════════════════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey:            "AIzaSyB2YnkiivjhxOmmAfS9JtvRRWwB3dsF86U",
+    authDomain:        "planning-maison-7eace.firebaseapp.com",
+    databaseURL:       "https://planning-maison-7eace-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:         "planning-maison-7eace",
+    storageBucket:     "planning-maison-7eace.firebasestorage.app",
+    messagingSenderId: "365827317336",
+    appId:             "1:365827317336:web:27412c4c05d67a7a81342d"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  const tasksRef = ref(db, "planning/tasks");
+
+  // ── Écoute temps réel ─────────────────────────────────
+  onValue(tasksRef, (snapshot) => {
+    window._tasks = {};
+    if (snapshot.exists()) {
+      snapshot.forEach(child => {
+        window._tasks[child.key] = { id: child.key, ...child.val() };
+      });
+    }
+    render();
+  });
+
+  // ── Exposer les fonctions Firebase à window ───────────
+  window.fbAdd = async (task) => {
+    const newRef = push(tasksRef);
+    await set(newRef, { ...task, id: newRef.key });
+    return newRef.key;
+  };
+
+  window.fbUpdate = async (id, data) => {
+    await update(ref(db, `planning/tasks/${id}`), data);
+  };
+
+  window.fbDelete = async (id) => {
+    await remove(ref(db, `planning/tasks/${id}`));
+  };
+</script>
+
+<!-- EmailJS pour les alertes mail -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; min-height: 100vh; }
+
+/* ── Header ─────────────────────────────────────────────────── */
+header {
+  background: linear-gradient(135deg, #2d6a4f, #40916c);
+  color: white; padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  flex-wrap: wrap; gap: 10px;
+}
+header h1 { font-size: 1.4rem; font-weight: 700; }
+.header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.user-select { padding: 6px 12px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.15); color: white; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+.user-select option { background: #2d6a4f; color: white; }
+.online-badge { font-size: 0.78rem; background: rgba(255,255,255,0.2);
+  padding: 4px 10px; border-radius: 20px; }
+
+/* ── Filtres personnes ───────────────────────────────────────── */
+.filter-bar {
+  display: flex; gap: 8px; padding: 8px 24px;
+  background: #f7fafc; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; align-items: center;
+}
+.filter-bar span { font-size: 0.75rem; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: .5px; }
+.filter-btn { padding: 4px 14px; border-radius: 20px; border: 2px solid #e2e8f0; background: white;
+  font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all .15s; }
+.filter-btn.active { border-color: currentColor; box-shadow: 0 0 0 2px currentColor; }
+.filter-btn-all { color: #4a5568; }
+.filter-btn-all.active { background: #4a5568; color: white; border-color: #4a5568; }
+
+/* ── Mode sombre ─────────────────────────────────────────────── */
+body.dark { background: #1a202c; color: #e2e8f0; }
+body.dark header { background: linear-gradient(135deg, #1b4332, #2d6a4f); }
+body.dark .stats, body.dark .toolbar, body.dark .filter-bar { background: #2d3748; border-color: #4a5568; }
+body.dark .col { background: #2d3748; }
+body.dark .task-card { background: #3a4a5c; border-color: #4a5568; }
+body.dark .modal { background: #2d3748; color: #e2e8f0; }
+body.dark .modal input, body.dark .modal select, body.dark .modal textarea { background: #1a202c; color: #e2e8f0; border-color: #4a5568; }
+body.dark .toolbar input, body.dark .toolbar select { background: #1a202c; color: #e2e8f0; border-color: #4a5568; }
+body.dark .stat-card { background: #3a4a5c; border-color: #4a5568; }
+body.dark .prog-bar-bg { background: #4a5568; }
+body.dark .btn-clear { background: #742a2a; color: #fed7d7; }
+body.dark .btn-alert { background: #2a4a6b; color: #bee3f8; }
+body.dark .filter-bar { background: #283141; }
+body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8f0; }
+
+/* ── Stats ──────────────────────────────────────────────────── */
+.stats {
+  display: flex; gap: 10px; padding: 14px 24px;
+  background: white; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap;
+}
+.stat-card { flex: 1; min-width: 90px; background: #f7fafc; border-radius: 10px;
+  padding: 10px 14px; text-align: center; border: 1px solid #e2e8f0; }
+.stat-card .num { font-size: 1.7rem; font-weight: 700; }
+.stat-card .lbl { font-size: 0.7rem; color: #718096; text-transform: uppercase; letter-spacing: .5px; }
+.stat-card.s-total .num { color: #2d3748; }
+.stat-card.s-urgent .num { color: #e53e3e; }
+.stat-card.s-prog .num { color: #dd6b20; }
+.stat-card.s-done .num { color: #38a169; }
+.prog-wrap { flex: 2; min-width: 160px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.prog-label { font-size: 0.78rem; color: #718096; }
+.prog-bar-bg { background: #e2e8f0; border-radius: 10px; height: 8px; overflow: hidden; }
+.prog-bar { background: linear-gradient(90deg, #38a169, #68d391); height: 100%; border-radius: 10px; transition: width .5s; }
+
+/* ── Toolbar ─────────────────────────────────────────────────── */
+.toolbar {
+  display: flex; gap: 8px; padding: 12px 24px;
+  background: white; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; align-items: center;
+}
+.toolbar input[type="text"], .toolbar select, .toolbar input[type="date"] {
+  padding: 7px 11px; border: 1px solid #cbd5e0; border-radius: 8px;
+  font-size: 0.87rem; background: #f7fafc; color: #1a202c;
+}
+.toolbar input[type="text"] { flex: 1; min-width: 180px; }
+.btn { padding: 7px 15px; border: none; border-radius: 8px; font-size: 0.87rem;
+  font-weight: 600; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.btn-add { background: #2d6a4f; color: white; }
+.btn-add:hover { background: #1b4332; }
+.btn-alert { background: #ebf8ff; color: #2b6cb0; }
+.btn-alert:hover { background: #bee3f8; }
+.btn-clear { background: #fff5f5; color: #c53030; }
+.btn-clear:hover { background: #fed7d7; }
+
+/* ── Colonnes Kanban ─────────────────────────────────────────── */
+.columns {
+  display: flex; gap: 14px; padding: 18px 24px;
+  overflow-x: auto; align-items: flex-start; min-height: calc(100vh - 220px);
+}
+.col {
+  flex: 1; min-width: 220px; background: white; border-radius: 14px;
+  padding: 13px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); border-top: 4px solid;
+}
+.col.col-todo     { border-color: #fc8181; }
+.col.col-progress { border-color: #f6ad55; }
+.col.col-done     { border-color: #68d391; }
+.col.col-ideas    { border-color: #76e4f7; }
+.col.col-rdv      { border-color: #90cdf4; }
+.col.drag-target  { background: #f0fff4; outline: 2px dashed #40916c; }
+
+.col-title {
+  font-size: 0.82rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; margin-bottom: 11px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.col-count { background: #edf2f7; border-radius: 20px; padding: 1px 8px; font-size: 0.73rem; color: #718096; }
+
+/* ── Cartes tâches ───────────────────────────────────────────── */
+.task-card {
+  background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 10px 11px; margin-bottom: 9px; cursor: grab; transition: box-shadow .15s, transform .1s;
+}
+.task-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.11); transform: translateY(-1px); }
+.task-card.dragging { opacity: 0.4; }
+
+.task-author { font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; padding: 2px 7px; border-radius: 20px; display: inline-block; }
+.task-title  { font-size: 0.89rem; font-weight: 600; margin-bottom: 5px; }
+.task-meta   { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; align-items: center; }
+
+.badge { font-size: 0.68rem; font-weight: 600; padding: 2px 7px; border-radius: 20px; }
+.badge-cat-bricolage  { background: #feebc8; color: #7b341e; }
+.badge-cat-jardin     { background: #c6f6d5; color: #1a4731; }
+.badge-cat-entretien  { background: #bee3f8; color: #1a365d; }
+.badge-cat-admin      { background: #e9d8fd; color: #44337a; }
+.badge-cat-rdv        { background: #bee3f8; color: #1a365d; }
+.badge-prio-haute     { background: #fed7d7; color: #9b2c2c; }
+.badge-prio-moyenne   { background: #fefcbf; color: #744210; }
+.badge-prio-basse     { background: #e2e8f0; color: #4a5568; }
+
+.task-deadline { font-size: 0.7rem; color: #718096; margin-top: 4px; }
+.task-deadline.overdue { color: #e53e3e; font-weight: 700; }
+.task-deadline.soon    { color: #dd6b20; font-weight: 700; }
+
+.task-actions { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+.btn-sm { padding: 3px 9px; font-size: 0.74rem; border-radius: 6px; cursor: pointer;
+  border: none; font-weight: 600; transition: background .12s; }
+.btn-move { background: #ebf8ff; color: #2b6cb0; }
+.btn-move:hover { background: #bee3f8; }
+.btn-del  { background: #fff5f5; color: #c53030; }
+.btn-del:hover { background: #fed7d7; }
+
+.empty-col { text-align: center; color: #a0aec0; font-size: 0.8rem; padding: 24px 0; }
+
+/* ── Toast ───────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; background: #2d6a4f; color: white;
+  padding: 12px 20px; border-radius: 10px; font-size: 0.88rem; font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 999;
+  animation: slideIn .3s ease; display: none;
+}
+@keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ── Modal config ────────────────────────────────────────────── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: white; border-radius: 14px; padding: 24px; max-width: 480px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.modal h2 { font-size: 1.1rem; margin-bottom: 16px; color: #2d6a4f; }
+.modal label { font-size: 0.85rem; font-weight: 600; color: #4a5568; display: block; margin-bottom: 4px; margin-top: 12px; }
+.modal input, .modal select { width: 100%; padding: 8px 11px; border: 1px solid #cbd5e0; border-radius: 8px; font-size: 0.88rem; }
+.modal-actions { display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end; }
+.btn-save { background: #2d6a4f; color: white; }
+.btn-cancel-m { background: #edf2f7; color: #4a5568; }
+.modal p.hint { font-size: 0.78rem; color: #718096; margin-top: 6px; line-height: 1.5; }
+.modal h3 { font-size: 0.9rem; font-weight: 700; margin-top: 16px; margin-bottom: 6px; color: #2d3748; border-top: 1px solid #e2e8f0; padding-top: 14px; }
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .columns { flex-direction: column; padding: 12px; }
+  .col { min-width: unset; }
+  .stats { padding: 10px; }
+}
+
+/* Bannière rappels du jour */
+#rappelBannerPM {
+  display: none;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 10px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-bottom: 2px solid rgba(255,255,255,0.2);
+}
+#rappelBannerPM .rappel-close {
+  float: right;
+  cursor: pointer;
+  opacity: 0.8;
+  font-size: 1rem;
+  margin-left: 12px;
+}
+#rappelBannerPM .rappel-item {
+  display: inline-block;
+  background: rgba(255,255,255,0.2);
+  border-radius: 12px;
+  padding: 2px 10px;
+  margin: 2px 4px;
+}
+</style>
+</head>
+<body>
+
+<div id="rappelBannerPM">
+  <span class="rappel-close" onclick="document.getElementById('rappelBannerPM').style.display='none'">✕</span>
+  <span id="rappelContentPM"></span>
+</div>
+
+<header>
+  <div>
+    <h1>🏡 Planning Maison</h1>
+    <div style="font-size:0.8rem;opacity:0.8;margin-top:2px;" id="dateDisplay"></div>
+  </div>
+  <div class="header-right">
+    <div class="online-badge" id="syncStatus">⏳ Connexion…</div>
+    <select class="user-select" id="currentUser" onchange="onUserChange()">
+      <option value="">👤 Qui êtes-vous ?</option>
+      <option value="">Qui êtes-vous ?</option>
+    </select>
+    <a href="Agenda_Familial.html" style="padding:6px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;text-decoration:none;">📅 Agenda</a>
+    <button class="btn" style="background:rgba(255,255,255,0.2);color:white;font-size:0.8rem;" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <button class="btn" style="background:rgba(255,255,255,0.2);color:white;font-size:0.8rem;" onclick="openConfig()">⚙ Config</button>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat-card s-total"><div class="num" id="statTotal">–</div><div class="lbl">Total</div></div>
+  <div class="stat-card s-urgent"><div class="num" id="statUrgent">–</div><div class="lbl">Priorité haute</div></div>
+  <div class="stat-card s-prog"><div class="num" id="statProg">–</div><div class="lbl">En cours</div></div>
+  <div class="stat-card s-done"><div class="num" id="statDone">–</div><div class="lbl">Terminées</div></div>
+  <div class="stat-card" style="border-top:3px solid #90cdf4;"><div class="num" id="statRdv" style="color:#2b6cb0;">–</div><div class="lbl">RDV à venir</div></div>
+  <div class="prog-wrap">
+    <div class="prog-label" id="progLabel">Progression globale</div>
+    <div class="prog-bar-bg"><div class="prog-bar" id="progBar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- Barre de filtres personnes -->
+<div class="filter-bar" id="filterBar">
+  <span>Filtrer :</span>
+  <button class="filter-btn filter-btn-all active" onclick="setFilter('')" id="fbtn-all">Tous</button>
+</div>
+
+<div class="toolbar">
+
+  <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:200px;">
+    <span style="font-size:0.72rem;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.04em;">Titre</span>
+    <div style="position:relative;display:flex;gap:4px;">
+      <input type="text" id="qTitle" placeholder="Tape pour chercher ou écris…" autocomplete="off"
+        style="flex:1;box-sizing:border-box;"
+        oninput="showSuggestions(this.value)"
+        onkeydown="handleSuggestKey(event)"
+        onblur="setTimeout(()=>hideSuggestions(),150)" />
+      <button onclick="toggleAllSuggestions()" title="Parcourir toutes les suggestions"
+        style="padding:0 10px;border:1px solid #cbd5e0;border-radius:8px;background:#f7fafc;cursor:pointer;font-size:0.95rem;">▼</button>
+      <div id="suggBox" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;border:1px solid #cbd5e0;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.13);z-index:999;max-height:320px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:3px;">
+    <span style="font-size:0.72rem;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.04em;">Catégorie</span>
+    <select id="qCat">
+      <option value="bricolage">🔨 Bricolage</option>
+      <option value="jardin">🌿 Jardin</option>
+      <option value="entretien">🔧 Entretien</option>
+      <option value="admin">📋 Admin</option>
+      <option value="rdv">📅 Rendez-vous</option>
+    </select>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:3px;">
+    <span style="font-size:0.72rem;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.04em;">Priorité</span>
+    <select id="qPrio">
+      <option value="haute">🔴 Haute</option>
+      <option value="moyenne" selected>🟡 Moyenne</option>
+      <option value="basse">🟢 Basse</option>
+    </select>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:3px;">
+    <span style="font-size:0.72rem;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.04em;">Échéance</span>
+    <input type="date" id="qDate" />
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:3px;">
+    <span style="font-size:0.72rem;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.04em;">Alerte (jours avant)</span>
+    <input type="number" id="qAlert" min="1" max="30" placeholder="7" style="width:90px;padding:7px 11px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.87rem;" value="7" />
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:3px;">
+    <span style="font-size:0.72rem;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.04em;">Assigner à</span>
+    <div id="qAssignWrap" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#f7fafc;border:1px solid #cbd5e0;border-radius:8px;padding:5px 10px;font-size:0.85rem;">
+      <span id="qAssignChecks" style="display:flex;gap:8px;flex-wrap:wrap;"></span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:3px;justify-content:flex-end;">
+    <span style="font-size:0.72rem;font-weight:600;color:transparent;">‎</span>
+    <button class="btn btn-add" onclick="quickAdd()">+ Ajouter</button>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:3px;justify-content:flex-end;">
+    <span style="font-size:0.72rem;font-weight:600;color:transparent;">‎</span>
+    <button class="btn btn-alert" onclick="runAlerts()">📧 Vérifier alertes</button>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:3px;justify-content:flex-end;">
+    <span style="font-size:0.72rem;font-weight:600;color:transparent;">‎</span>
+    <button class="btn btn-clear" onclick="clearDone()">🗑 Vider terminées</button>
+  </div>
+
+</div>
+
+<div class="columns">
+  <div class="col col-rdv"      id="col-rdv"      ondragover="allowDrop(event)" ondrop="drop(event,'rdv')">
+    <div class="col-title" style="color:#2b6cb0;">📅 Rendez-vous <span class="col-count" id="cnt-rdv">0</span></div>
+    <div id="tasks-rdv"></div>
+    <div class="empty-col" id="emp-rdv">Aucun rendez-vous</div>
+  </div>
+  <div class="col col-todo"     id="col-todo"     ondragover="allowDrop(event)" ondrop="drop(event,'todo')">
+    <div class="col-title" style="color:#c53030;">À faire <span class="col-count" id="cnt-todo">0</span></div>
+    <div id="tasks-todo"></div>
+    <div class="empty-col" id="emp-todo">Aucune tâche</div>
+  </div>
+  <div class="col col-progress" id="col-progress" ondragover="allowDrop(event)" ondrop="drop(event,'progress')">
+    <div class="col-title" style="color:#c05621;">En cours <span class="col-count" id="cnt-progress">0</span></div>
+    <div id="tasks-progress"></div>
+    <div class="empty-col" id="emp-progress">Glisse une tâche ici</div>
+  </div>
+  <div class="col col-done"     id="col-done"     ondragover="allowDrop(event)" ondrop="drop(event,'done')">
+    <div class="col-title" style="color:#276749;">Terminées ✓ <span class="col-count" id="cnt-done">0</span></div>
+    <div id="tasks-done"></div>
+    <div class="empty-col" id="emp-done">Les tâches finies 🎉</div>
+  </div>
+  <div class="col col-ideas"    id="col-ideas"    ondragover="allowDrop(event)" ondrop="drop(event,'ideas')">
+    <div class="col-title" style="color:#086f83;">Idées / Plus tard <span class="col-count" id="cnt-ideas">0</span></div>
+    <div id="tasks-ideas"></div>
+    <div class="empty-col" id="emp-ideas">Tes idées futures</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Modal édition tâche -->
+<div class="modal-overlay" id="editOverlay" style="display:none;">
+  <div class="modal">
+    <h2>✏ Modifier la tâche</h2>
+    <label>Titre</label>
+    <input type="text" id="editTitle" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;" />
+    <label>Catégorie</label>
+    <select id="editCat" style="width:100%;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;">
+      <option value="bricolage">🔨 Bricolage</option>
+      <option value="jardin">🌿 Jardin</option>
+      <option value="entretien">🔧 Entretien</option>
+      <option value="admin">📋 Admin</option>
+      <option value="rdv">📅 Rendez-vous</option>
+    </select>
+    <label>Priorité</label>
+    <select id="editPrio" style="width:100%;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;">
+      <option value="haute">🔴 Haute</option>
+      <option value="moyenne">🟡 Moyenne</option>
+      <option value="basse">🟢 Basse</option>
+    </select>
+    <label>Échéance</label>
+    <input type="date" id="editDate" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;" />
+    <label>Heure début</label>
+    <div style="display:flex;align-items:center;gap:4px;border:1px solid #cbd5e0;border-radius:8px;padding:4px 8px;background:white;margin-bottom:10px;">
+      <select id="editTimeH" style="border:none;outline:none;font-size:0.9rem;background:transparent;cursor:pointer;"></select>
+      <span style="font-weight:700;color:#4a5568;">:</span>
+      <select id="editTimeM" style="border:none;outline:none;font-size:0.9rem;background:transparent;cursor:pointer;"></select>
+      <span style="font-size:0.75rem;color:#a0aec0;cursor:pointer;margin-left:4px;" onclick="document.getElementById('editTimeH').value='';document.getElementById('editTimeM').value='';" title="Effacer">✕</span>
+    </div>
+    <label>Heure de fin</label>
+    <div style="display:flex;align-items:center;gap:4px;border:1px solid #cbd5e0;border-radius:8px;padding:4px 8px;background:white;margin-bottom:10px;">
+      <select id="editTimeEndH" style="border:none;outline:none;font-size:0.9rem;background:transparent;cursor:pointer;"></select>
+      <span style="font-weight:700;color:#4a5568;">:</span>
+      <select id="editTimeEndM" style="border:none;outline:none;font-size:0.9rem;background:transparent;cursor:pointer;"></select>
+      <span style="font-size:0.75rem;color:#a0aec0;cursor:pointer;margin-left:4px;" onclick="document.getElementById('editTimeEndH').value='';document.getElementById('editTimeEndM').value='';" title="Effacer">✕</span>
+    </div>
+    <label>Alerte (jours avant échéance)</label>
+    <input type="number" id="editAlert" min="1" max="30" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;" />
+    <label>Assigné à</label>
+    <div id="editAssignChecks" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding:8px;border:1px solid #cbd5e0;border-radius:8px;background:#f7fafc;"></div>
+    <label>Notes</label>
+    <textarea id="editNotes" rows="3" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-cancel-m" onclick="closeEdit()">Annuler</button>
+      <button class="btn btn-save" onclick="saveEdit()">💾 Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal configuration -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>⚙ Configuration</h2>
+
+    <h3>🔥 Firebase (base de données partagée)</h3>
+    <p class="hint">1. Créer un projet sur <b>console.firebase.google.com</b><br>
+    2. Realtime Database → Créer → Copier l'URL<br>
+    3. Règles : mettre <code>".read": true, ".write": true</code><br>
+    4. Project Settings → Config → Copier les valeurs ci-dessous</p>
+    <label>URL base de données</label>
+    <input type="text" id="cfgDbUrl" placeholder="https://mon-projet-default-rtdb.europe-west1.firebasedatabase.app" />
+    <label>API Key</label>
+    <input type="text" id="cfgApiKey" placeholder="AIzaSy..." />
+    <label>Project ID</label>
+    <input type="text" id="cfgProjectId" placeholder="mon-projet-12345" />
+
+    <h3>📧 EmailJS (alertes mail)</h3>
+    <p class="hint">1. Créer un compte sur <b>emailjs.com</b> (gratuit — 200 mails/mois)<br>
+    2. Add New Service → Gmail → Copier le Service ID<br>
+    3. Email Templates → Créer un template → Copier le Template ID<br>
+    4. Account → Public Key → Copier</p>
+    <label>Service ID</label>
+    <input type="text" id="cfgSvcId" placeholder="service_xxxxxxx" />
+    <label>Template ID</label>
+    <input type="text" id="cfgTplId" placeholder="template_xxxxxxx" />
+    <label>Public Key</label>
+    <input type="text" id="cfgPubKey" placeholder="xxxxxxxxxxxxxxx" />
+
+    <h3>👥 Membres & mails</h3>
+    <p class="hint">Un membre par ligne : <b>Prénom:email@exemple.com</b></p>
+    <textarea id="cfgMembers" rows="4" style="width:100%;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.85rem;font-family:monospace;">Machin:kebo80@hotmail.fr
+Bidule:emilieancel22@yahoo.fr
+Bibi:abbigaelancel@gmail.com</textarea>
+
+    <div class="modal-actions" style="flex-wrap:wrap;">
+      <button class="btn" style="background:#ebf8ff;color:#2b6cb0;" onclick="testEmail()">🧪 Tester email</button>
+      <button class="btn btn-cancel-m" onclick="closeConfig()">Annuler</button>
+      <button class="btn btn-save" onclick="saveConfig()">💾 Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// STATE & CONFIG
+// ══════════════════════════════════════════════════════════════
+window._tasks = {};  // rempli par Firebase onValue
+let dragId = null;
+let activeFilter = ''; // filtre personne actif
+let darkMode = localStorage.getItem('pmDark') === '1';
+if (darkMode) document.body.classList.add('dark');
+
+// Config sauvegardée en localStorage
+let cfg = JSON.parse(localStorage.getItem('pmConfig') || '{}');
+
+function updateMemberSelect(membersRaw) {
+  const sel = document.getElementById('currentUser');
+  if (!sel) return;
+  const current = localStorage.getItem('pmUser') || '';
+  sel.innerHTML = '<option value="">👤 Qui êtes-vous ?</option>';
+  const checksWrap = document.getElementById('qAssignChecks');
+  if (checksWrap) checksWrap.innerHTML = '';
+  (membersRaw || '').split('\n').forEach(line => {
+    const name = line.split(':')[0].trim();
+    if (!name) return;
+    // Menu déroulant "Qui êtes-vous"
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    if (name === current) opt.selected = true;
+    sel.appendChild(opt);
+    // Cases à cocher "Assigner à"
+    if (checksWrap) {
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = name;
+      cb.id = 'assign_' + name;
+      cb.style.cursor = 'pointer';
+      lbl.appendChild(cb);
+      lbl.appendChild(document.createTextNode(name));
+      checksWrap.appendChild(lbl);
+    }
+  });
+}
+
+// Initialiser le menu membres au chargement
+(function initMemberSelect() {
+  const defaultMembers = 'Machin:kebo80@hotmail.fr\nBidule:emilieancel22@yahoo.fr\nBibi:abbigaelancel@gmail.com';
+  updateMemberSelect(cfg.members || defaultMembers);
+})();
+
+// User courant
+let currentUser = localStorage.getItem('pmUser') || '';
+if (currentUser) document.getElementById('currentUser').value = currentUser;
+
+function onUserChange() {
+  currentUser = document.getElementById('currentUser').value;
+  localStorage.setItem('pmUser', currentUser);
+}
+
+// Date
+const now = new Date();
+document.getElementById('dateDisplay').textContent =
+  now.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+// Sync status (Firebase met à jour _tasks via onValue)
+setTimeout(() => {
+  const s = document.getElementById('syncStatus');
+  if (Object.keys(window._tasks).length > 0 || document.querySelector('.task-card')) {
+    s.textContent = '🟢 Synchronisé';
+  } else {
+    s.textContent = '⚠ Mode démo (configurer Firebase)';
+    // Données démo si pas de Firebase
+    loadDemo();
+  }
+}, 3000);
+
+// Initialiser les pickers d'heure dès que le DOM est prêt
+buildEditTimePickers();
+
+function loadDemo() {
+  window._tasks = {
+    'd1': { id:'d1', title:'Tondre la pelouse',           cat:'jardin',   prio:'haute',   status:'todo',     author:'Marie', date:'2026-09-05', alertDays:3,  notes:'' },
+    'd2': { id:'d2', title:'Changer joint robinet',       cat:'entretien',prio:'moyenne', status:'progress', author:'Kevin', date:'2026-09-10', alertDays:7,  notes:'Joint 20mm' },
+    'd3': { id:'d3', title:'Repeindre volets',            cat:'bricolage',prio:'basse',   status:'ideas',    author:'Kevin', date:'',           alertDays:7,  notes:'' },
+    'd4': { id:'d4', title:'Nettoyer gouttières',         cat:'entretien',prio:'moyenne', status:'todo',     author:'Luc',   date:'2026-09-25', alertDays:7,  notes:'' },
+    'd5': { id:'d5', title:'Plantation bulbes automne',   cat:'jardin',   prio:'moyenne', status:'todo',     author:'Marie', date:'2026-10-10', alertDays:14, notes:'' },
+  };
+  document.getElementById('syncStatus').textContent = '🟡 Mode démo';
+  render();
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════════
+function render() {
+  const cols = ['rdv','todo','progress','done','ideas'];
+  cols.forEach(c => document.getElementById('tasks-' + c).innerHTML = '');
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  let tasks = Object.values(window._tasks);
+
+  // Filtre par personne
+  if (activeFilter) tasks = tasks.filter(t => (t.author||'').split(',').map(n=>n.trim()).includes(activeFilter));
+
+  // Tri général (hors RDV) : en retard, puis priorité, puis date
+  const po = { haute:0, moyenne:1, basse:2 };
+  tasks.sort((a,b) => {
+    const diffA = a.date ? Math.round((new Date(a.date+'T00:00:00') - today)/86400000) : 999;
+    const diffB = b.date ? Math.round((new Date(b.date+'T00:00:00') - today)/86400000) : 999;
+    const overA = diffA < 0 ? 0 : 1;
+    const overB = diffB < 0 ? 0 : 1;
+    if (overA !== overB) return overA - overB;
+    if (po[a.prio] !== po[b.prio]) return po[a.prio] - po[b.prio];
+    if (a.date && b.date) return new Date(a.date) - new Date(b.date);
+    return 0;
+  });
+
+  tasks.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'task-card';
+    el.id = 'card-' + t.id;
+    el.draggable = true;
+    el.addEventListener('dragstart', () => { dragId = t.id; el.classList.add('dragging'); });
+    el.addEventListener('dragend',   () => el.classList.remove('dragging'));
+
+    // Deadline
+    let dlHtml = '';
+    if (t.date) {
+      const d = new Date(t.date + 'T00:00:00');
+      const diff = Math.round((d - today) / 86400000);
+      const fmt  = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'short' });
+      let cls = 'task-deadline', txt, badge = '';
+      if (diff === 0)     { badge = ' <b style="background:#e53e3e;color:white;padding:1px 5px;border-radius:4px;font-size:0.65rem;">AUJOURD\'HUI</b>'; }
+      else if (diff === 1){ badge = ' <b style="background:#dd6b20;color:white;padding:1px 5px;border-radius:4px;font-size:0.65rem;">DEMAIN</b>'; }
+      if (diff < 0)       { cls += ' overdue'; txt = `⚠ ${fmt} — dépassé de ${Math.abs(diff)}j`; }
+      else if (diff <= 7) { cls += ' soon';    txt = `⏰ ${fmt} — dans ${diff}j`; }
+      else                {                    txt = `📅 ${fmt}`; }
+      dlHtml = `<div class="${cls}">${txt}${badge}</div>`;
+    }
+
+    // Boutons déplacement
+    const moves = {
+      rdv:      [{l:'✓ Passé', s:'done'}, {l:'↩ À faire', s:'todo'}],
+      todo:     [{l:'▶ En cours', s:'progress'}, {l:'💡 Idées', s:'ideas'}],
+      progress: [{l:'✓ Terminer', s:'done'}, {l:'↩ À faire', s:'todo'}],
+      done:     [{l:'↩ Réouvrir', s:'todo'}],
+      ideas:    [{l:'▶ À faire',  s:'todo'}],
+    }[t.status] || [];
+
+    const moveBtns = moves.map(m =>
+      `<button class="btn-sm btn-move" onclick="moveTask('${t.id}','${m.s}')">${m.l}</button>`
+    ).join('');
+
+    const catLabel = { bricolage:'🔨 Bricolage', jardin:'🌿 Jardin', entretien:'🔧 Entretien', admin:'📋 Admin', rdv:'📅 Rendez-vous' }[t.cat] || t.cat;
+    const prioLabel = { haute:'🔴 Haute', moyenne:'🟡 Moy.', basse:'🟢 Basse' }[t.prio] || t.prio;
+
+    // Couleur de fond = personne assignée (pour tous, planning ET agenda)
+    // Bordure gauche épaisse = type d'événement (uniquement pour les events agenda)
+    const cardBg = getCardBackground(t.author);
+    if (cardBg) el.style.cssText += cardBg;
+    if (t.cat === 'agenda') {
+      // Ajouter une bordure gauche colorée par type par-dessus le fond personne
+      const agendaTypeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', autre:'#718096' };
+      const typeKey   = t.evType || t.type || 'autre';
+      const typeColor = agendaTypeColors[typeKey] || '#718096';
+      el.style.borderLeft = `5px solid ${typeColor}`;
+    }
+
+    // Pour les RDV et events agenda : afficher la date en grand
+    let rdvDateHtml = '';
+    if ((t.cat === 'rdv' || t.cat === 'agenda') && t.date) {
+      const d = new Date(t.date + 'T00:00:00');
+      const diff = Math.round((d - today) / 86400000);
+      const dayNum  = d.toLocaleDateString('fr-FR', { day:'2-digit' });
+      const month   = d.toLocaleDateString('fr-FR', { month:'long' });
+      const year    = d.getFullYear();
+      const weekday = d.toLocaleDateString('fr-FR', { weekday:'long' });
+      let rdvColor = diff < 0 ? '#9b2c2c' : diff <= 7 ? '#c05621' : '#1a365d';
+      let rdvBg    = diff < 0 ? '#fff5f5' : diff <= 7 ? '#fffaf0' : '#ebf8ff';
+      let timeStr = '';
+      if (t.time) { timeStr = t.time; if (t.timeEnd) timeStr += ` → ${t.timeEnd}`; }
+      rdvDateHtml = `<div style="text-align:center;margin:6px 0;padding:8px;background:${rdvBg};border-radius:8px;border:1px solid ${rdvColor}22;">
+        <div style="font-size:2rem;font-weight:900;line-height:1;color:${rdvColor};">${dayNum}</div>
+        <div style="font-size:0.85rem;font-weight:700;color:${rdvColor};text-transform:capitalize;">${month} ${year}</div>
+        <div style="font-size:0.72rem;color:#718096;text-transform:capitalize;">${weekday}${diff >= 0 ? ` · dans ${diff}j` : ` · dépassé de ${Math.abs(diff)}j`}</div>
+        ${timeStr ? `<div style="font-size:0.85rem;font-weight:700;color:${rdvColor};margin-top:3px;">🕐 ${timeStr}</div>` : ''}
+      </div>`;
+      dlHtml = ''; // on n'affiche pas la ligne date en double
+    }
+
+    el.innerHTML = `
+      <div class="task-author" style="${getAuthorStyle(t.author)}">👤 ${t.author || 'Inconnu'}</div>
+      <div class="task-title">${t.title}</div>
+      <div class="task-meta">
+        <span class="badge badge-cat-${t.cat}">${catLabel}</span>
+        <span class="badge badge-prio-${t.prio}">${prioLabel}</span>
+      </div>
+      ${rdvDateHtml}
+      ${dlHtml}
+      ${t.notes ? `<div onclick="this.style.whiteSpace=this.style.whiteSpace==='normal'?'nowrap':'normal'" title="Cliquer pour lire" style="font-size:0.72rem;color:#718096;margin-top:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;" >📝 ${t.notes}</div>` : ''}
+      <div class="task-actions">${moveBtns}<button class="btn-sm" style="background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8;" onclick="openEdit('${t.id}')">✏ Modifier</button><button class="btn-sm btn-del" onclick="deleteTask('${t.id}')">✕</button></div>`;
+
+    document.getElementById('tasks-' + t.status).appendChild(el);
+  });
+
+  // Retrier la colonne RDV chronologiquement (indépendamment du tri général par priorité)
+  const rdvCol = document.getElementById('tasks-rdv');
+  const rdvCards = [...rdvCol.children];
+  rdvCards.sort((a, b) => {
+    const ta = window._tasks[a.id.replace('card-','')];
+    const tb = window._tasks[b.id.replace('card-','')];
+    const da = ta && ta.date ? new Date(ta.date) : new Date('9999-12-31');
+    const db = tb && tb.date ? new Date(tb.date) : new Date('9999-12-31');
+    return da - db;
+  });
+  rdvCards.forEach(c => rdvCol.appendChild(c));
+
+  // Compteurs et vides
+  cols.forEach(c => {
+    const n = tasks.filter(t => t.status === c).length;
+    document.getElementById('cnt-' + c).textContent = n;
+    document.getElementById('emp-' + c).style.display = n === 0 ? '' : 'none';
+  });
+
+  // Stats
+  const allTasks = Object.values(window._tasks); // stats sur toutes les tâches, pas filtrées
+  const total  = allTasks.length;
+  const urgent = allTasks.filter(t => t.prio === 'haute' && t.status !== 'done').length;
+  const prog   = allTasks.filter(t => t.status === 'progress').length;
+  const done   = allTasks.filter(t => t.status === 'done').length;
+  const rdvCount = allTasks.filter(t => t.status === 'rdv' && (!t.date || new Date(t.date+'T00:00:00') >= today)).length;
+  const pct    = total ? Math.round(done / total * 100) : 0;
+
+  document.getElementById('statTotal').textContent  = total;
+  document.getElementById('statUrgent').textContent = urgent;
+  document.getElementById('statProg').textContent   = prog;
+  document.getElementById('statDone').textContent   = done;
+  document.getElementById('statRdv').textContent    = rdvCount;
+  document.getElementById('progBar').style.width    = pct + '%';
+  document.getElementById('progLabel').textContent  = `Progression globale — ${pct}% terminé`;
+
+  // Mettre à jour les boutons de filtre
+  buildFilterButtons();
+
+  // Bannière rappels du jour
+  showRappelBannerPM();
+}
+
+// ══════════════════════════════════════════════════════════════
+// ACTIONS
+// ══════════════════════════════════════════════════════════════
+async function quickAdd() {
+  const title = document.getElementById('qTitle').value.trim();
+  if (!title) { document.getElementById('qTitle').focus(); return; }
+  if (!currentUser) { toast('⚠ Choisissez d\'abord votre nom !'); return; }
+
+  // Récupérer les personnes cochées (ou auteur par défaut)
+  const checked = [...document.querySelectorAll('#qAssignChecks input[type=checkbox]:checked')].map(cb => cb.value);
+  const assignedTo = checked.length > 0 ? checked.join(', ') : currentUser;
+
+  const qCat = document.getElementById('qCat').value;
+  const task = {
+    title, author: assignedTo,
+    cat:       qCat,
+    prio:      document.getElementById('qPrio').value,
+    status:    qCat === 'rdv' ? 'rdv' : 'todo',
+    date:      document.getElementById('qDate').value,
+    alertDays: parseInt(document.getElementById('qAlert').value) || 7,
+    notes:     '',
+    createdAt: new Date().toISOString(),
+  };
+
+  if (window.fbAdd) {
+    await window.fbAdd(task);  // Firebase → onValue refait le render
+  } else {
+    const id = 'd' + Date.now();
+    window._tasks[id] = { id, ...task };
+    render();
+  }
+
+  document.getElementById('qTitle').value = '';
+  document.getElementById('qDate').value  = '';
+  document.querySelectorAll('#qAssignChecks input[type=checkbox]').forEach(cb => cb.checked = false);
+  toast('✅ Tâche ajoutée !');
+}
+
+document.getElementById('qTitle').addEventListener('keydown', e => { if (e.key === 'Enter') quickAdd(); });
+
+// ══════════════════════════════════════════════════════════════
+// SUGGESTIONS TÂCHES PRÉDÉFINIES
+// ══════════════════════════════════════════════════════════════
+const SUGGESTIONS = [
+  // Bricolage – réparations
+  { label:'🔨 Réparer une porte', cat:'bricolage' },
+  { label:'🔨 Changer une serrure', cat:'bricolage' },
+  { label:'🔨 Réparer une fenêtre', cat:'bricolage' },
+  { label:'🔨 Changer un joint de fenêtre', cat:'bricolage' },
+  { label:'🔨 Poser une étagère', cat:'bricolage' },
+  { label:'🔨 Repeindre une pièce', cat:'bricolage' },
+  { label:'🔨 Repeindre les volets', cat:'bricolage' },
+  { label:'🔨 Reboucher des fissures', cat:'bricolage' },
+  { label:'🔨 Changer un interrupteur', cat:'bricolage' },
+  { label:'🔨 Installer une prise électrique', cat:'bricolage' },
+  { label:'🔨 Monter un meuble', cat:'bricolage' },
+  { label:'🔨 Poser du carrelage', cat:'bricolage' },
+  { label:'🔨 Changer un robinet', cat:'bricolage' },
+  { label:'🔨 Changer joint de robinet', cat:'bricolage' },
+  { label:'🔨 Déboucher un évier', cat:'bricolage' },
+  { label:'🔨 Déboucher une baignoire', cat:'bricolage' },
+  { label:'🔨 Changer le pommeau de douche', cat:'bricolage' },
+  { label:'🔨 Refaire les joints de carrelage', cat:'bricolage' },
+  { label:'🔨 Refaire les joints de silicone', cat:'bricolage' },
+  { label:'🔨 Poser une barre de rideau de douche', cat:'bricolage' },
+  { label:'🔨 Changer un siphon', cat:'bricolage' },
+  { label:'🔨 Fixer une tringle à rideau', cat:'bricolage' },
+  { label:'🔨 Monter un lit', cat:'bricolage' },
+  { label:'🔨 Assembler une armoire', cat:'bricolage' },
+  { label:'🔨 Installer une VMC', cat:'bricolage' },
+  { label:'🔨 Poser un parquet flottant', cat:'bricolage' },
+  { label:'🔨 Poser une moquette', cat:'bricolage' },
+  { label:'🔨 Peindre le plafond', cat:'bricolage' },
+  { label:'🔨 Changer une ampoule de luminaire', cat:'bricolage' },
+  { label:'🔨 Installer un luminaire', cat:'bricolage' },
+  { label:'🔨 Monter un store', cat:'bricolage' },
+  { label:'🔨 Installer une tringle', cat:'bricolage' },
+  // Ménage – cuisine
+  { label:'🧹 Ranger la cuisine', cat:'entretien' },
+  { label:'🧹 Nettoyer le four', cat:'entretien' },
+  { label:'🧹 Nettoyer la hotte', cat:'entretien' },
+  { label:'🧹 Dégivrer le congélateur', cat:'entretien' },
+  { label:'🧹 Nettoyer le réfrigérateur', cat:'entretien' },
+  { label:'🧹 Nettoyer le micro-ondes', cat:'entretien' },
+  { label:'🧹 Détartrer la cafetière', cat:'entretien' },
+  { label:'🧹 Détartrer le lave-vaisselle', cat:'entretien' },
+  { label:'🧹 Nettoyer les plaques de cuisson', cat:'entretien' },
+  { label:'🧹 Vider les placards cuisine', cat:'entretien' },
+  { label:'🧹 Faire un grand rangement cuisine', cat:'entretien' },
+  // Ménage – salon / séjour
+  { label:'🧹 Ranger le salon', cat:'entretien' },
+  { label:'🧹 Passer l\'aspirateur salon', cat:'entretien' },
+  { label:'🧹 Nettoyer le canapé', cat:'entretien' },
+  { label:'🧹 Dépoussiérer les meubles', cat:'entretien' },
+  { label:'🧹 Nettoyer la TV et les écrans', cat:'entretien' },
+  { label:'🧹 Laver les coussins', cat:'entretien' },
+  { label:'🧹 Nettoyer le tapis', cat:'entretien' },
+  // Ménage – chambre
+  { label:'🧹 Ranger la chambre', cat:'entretien' },
+  { label:'🧹 Ranger la chambre des enfants', cat:'entretien' },
+  { label:'🧹 Changer les draps', cat:'entretien' },
+  { label:'🧹 Laver les couettes', cat:'entretien' },
+  { label:'🧹 Laver les oreillers', cat:'entretien' },
+  { label:'🧹 Retourner le matelas', cat:'entretien' },
+  { label:'🧹 Vider et ranger les armoires', cat:'entretien' },
+  { label:'🧹 Trier les vêtements', cat:'entretien' },
+  { label:'🧹 Donner les vêtements', cat:'entretien' },
+  // Ménage – salle de bain / WC
+  { label:'🧹 Nettoyer la salle de bain', cat:'entretien' },
+  { label:'🧹 Nettoyer les WC', cat:'entretien' },
+  { label:'🧹 Détartrer la douche', cat:'entretien' },
+  { label:'🧹 Nettoyer les joints', cat:'entretien' },
+  { label:'🧹 Changer les serviettes de bain', cat:'entretien' },
+  { label:'🧹 Réapprovisionner WC et SDB', cat:'entretien' },
+  // Ménage – général
+  { label:'🧹 Passer l\'aspirateur', cat:'entretien' },
+  { label:'🧹 Passer la serpillière', cat:'entretien' },
+  { label:'🧹 Laver les vitres', cat:'entretien' },
+  { label:'🧹 Nettoyer les miroirs', cat:'entretien' },
+  { label:'🧹 Faire la lessive', cat:'entretien' },
+  { label:'🧹 Repasser le linge', cat:'entretien' },
+  { label:'🧹 Plier et ranger le linge', cat:'entretien' },
+  { label:'🧹 Vider les poubelles', cat:'entretien' },
+  { label:'🧹 Sortir les poubelles', cat:'entretien' },
+  { label:'🧹 Nettoyer l\'entrée', cat:'entretien' },
+  { label:'🧹 Ranger la cave', cat:'entretien' },
+  { label:'🧹 Ranger le garage', cat:'entretien' },
+  { label:'🧹 Ranger le grenier', cat:'entretien' },
+  { label:'🧹 Désencombrer la maison', cat:'entretien' },
+  { label:'🧹 Faire du tri général', cat:'entretien' },
+  { label:'🧹 Nettoyer les interrupteurs et prises', cat:'entretien' },
+  { label:'🧹 Dépoussiérer les plinthes', cat:'entretien' },
+  { label:'🧹 Nettoyer les radiateurs', cat:'entretien' },
+  // Entretien technique
+  { label:'🔧 Nettoyer les gouttières', cat:'entretien' },
+  { label:'🔧 Vidanger la chaudière', cat:'entretien' },
+  { label:'🔧 Changer les filtres VMC', cat:'entretien' },
+  { label:'🔧 Révision chaudière', cat:'entretien' },
+  { label:'🔧 Dépoussiérer la VMC', cat:'entretien' },
+  { label:'🔧 Contrôle détecteurs fumée', cat:'entretien' },
+  { label:'🔧 Détartrer le chauffe-eau', cat:'entretien' },
+  { label:'🔧 Entretien piscine', cat:'entretien' },
+  { label:'🔧 Contrôle toiture', cat:'entretien' },
+  { label:'🔧 Nettoyer la cheminée', cat:'entretien' },
+  { label:'🔧 Purger les radiateurs', cat:'entretien' },
+  { label:'🔧 Vérifier les extincteurs', cat:'entretien' },
+  { label:'🔧 Contrôle tableau électrique', cat:'entretien' },
+  { label:'🔧 Entretien fosse septique', cat:'entretien' },
+  { label:'🔧 Hivériser les tuyaux', cat:'entretien' },
+  // Courses / Achats
+  { label:'🛒 Faire les courses', cat:'admin' },
+  { label:'🛒 Courses grandes surfaces', cat:'admin' },
+  { label:'🛒 Commander en ligne', cat:'admin' },
+  { label:'🛒 Acheter produits entretien', cat:'admin' },
+  { label:'🛒 Acheter matériel bricolage', cat:'admin' },
+  { label:'🛒 Acheter matériel jardin', cat:'admin' },
+  { label:'🛒 Acheter fournitures maison', cat:'admin' },
+  // Jardin
+  { label:'🌿 Tondre la pelouse', cat:'jardin' },
+  { label:'🌿 Tailler les haies', cat:'jardin' },
+  { label:'🌿 Désherber les allées', cat:'jardin' },
+  { label:'🌿 Désherber les massifs', cat:'jardin' },
+  { label:'🌿 Planter des bulbes', cat:'jardin' },
+  { label:'🌿 Arroser les plantes', cat:'jardin' },
+  { label:'🌿 Tailler les arbres fruitiers', cat:'jardin' },
+  { label:'🌿 Préparer le potager', cat:'jardin' },
+  { label:'🌿 Ramasser les feuilles', cat:'jardin' },
+  { label:'🌿 Rentrer les plantes pour l\'hiver', cat:'jardin' },
+  { label:'🌿 Traiter contre les nuisibles', cat:'jardin' },
+  { label:'🌿 Nettoyer la terrasse', cat:'jardin' },
+  { label:'🌿 Nettoyer l\'allée', cat:'jardin' },
+  { label:'🌿 Ranger le mobilier de jardin', cat:'jardin' },
+  { label:'🌿 Rentrer le mobilier de jardin', cat:'jardin' },
+  { label:'🌿 Traiter la terrasse en bois', cat:'jardin' },
+  { label:'🌿 Réparer la clôture', cat:'jardin' },
+  { label:'🌿 Planter des légumes', cat:'jardin' },
+  { label:'🌿 Récolter les légumes', cat:'jardin' },
+  { label:'🌿 Compostage', cat:'jardin' },
+  // Rendez-vous
+  { label:'📅 Rendez-vous médecin', cat:'rdv' },
+  { label:'📅 Rendez-vous dentiste', cat:'rdv' },
+  { label:'📅 Rendez-vous vétérinaire', cat:'rdv' },
+  { label:'📅 Rendez-vous kiné', cat:'rdv' },
+  { label:'📅 Rendez-vous ophtalmologue', cat:'rdv' },
+  { label:'📅 Contrôle technique voiture', cat:'rdv' },
+  { label:'📅 Révision voiture', cat:'rdv' },
+  { label:'📅 Visite plombier', cat:'rdv' },
+  { label:'📅 Visite électricien', cat:'rdv' },
+  { label:'📅 Visite artisan', cat:'rdv' },
+  { label:'📅 Réunion école', cat:'rdv' },
+  { label:'📅 Livraison prévue', cat:'rdv' },
+  { label:'📅 Visite de contrôle', cat:'rdv' },
+  // Admin
+  { label:'📋 Déclarer les impôts', cat:'admin' },
+  { label:'📋 Renouveler l\'assurance habitation', cat:'admin' },
+  { label:'📋 Renouveler l\'assurance voiture', cat:'admin' },
+  { label:'📋 Appeler le plombier', cat:'admin' },
+  { label:'📋 Appeler l\'électricien', cat:'admin' },
+  { label:'📋 Demander des devis', cat:'admin' },
+  { label:'📋 Payer la taxe foncière', cat:'admin' },
+  { label:'📋 Renouveler contrat énergie', cat:'admin' },
+  { label:'📋 Résilier un abonnement', cat:'admin' },
+  { label:'📋 Faire une réclamation', cat:'admin' },
+  { label:'📋 Renouveler un document', cat:'admin' },
+  { label:'📋 Contacter la mairie', cat:'admin' },
+];
+
+let suggFocus = -1;
+
+function showSuggestions(val) {
+  const box = document.getElementById('suggBox');
+  const q = val.trim().toLowerCase();
+  if (!q) { box.style.display = 'none'; return; }
+  const matches = SUGGESTIONS.filter(s => s.label.toLowerCase().includes(q)).slice(0, 12);
+  if (!matches.length) { box.style.display = 'none'; return; }
+  box.innerHTML = matches.map((s, i) =>
+    `<div class="sugg-item" data-i="${i}" data-label="${s.label.replace(/^.{2}\s/,'')}" data-cat="${s.cat}"
+      style="padding:8px 12px;cursor:pointer;font-size:0.87rem;border-bottom:1px solid #f0f0f0;"
+      onmousedown="pickSuggestion(this)"
+      onmouseover="highlightSugg(${i})">${s.label}</div>`
+  ).join('');
+  box.style.display = 'block';
+  suggFocus = -1;
+}
+
+let _allSuggOpen = false;
+function toggleAllSuggestions() {
+  const box = document.getElementById('suggBox');
+  if (_allSuggOpen) { hideSuggestions(); return; }
+  _allSuggOpen = true;
+
+  // Grouper par catégorie
+  const groups = {};
+  const catNames = { bricolage:'🔨 Bricolage', jardin:'🌿 Jardin', entretien:'🔧 Entretien / Ménage', admin:'📋 Admin / Courses', rdv:'📅 Rendez-vous' };
+  SUGGESTIONS.forEach(s => {
+    if (!groups[s.cat]) groups[s.cat] = [];
+    groups[s.cat].push(s);
+  });
+
+  let html = '<div style="padding:8px 12px;background:#f7fafc;font-size:0.72rem;color:#718096;font-weight:700;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">Toutes les suggestions <span onmousedown="hideSuggestions()" style="cursor:pointer;font-size:1rem;color:#a0aec0;">✕</span></div>';
+  let globalIdx = 0;
+  Object.entries(groups).forEach(([cat, items]) => {
+    html += `<div style="padding:6px 12px 2px;font-size:0.7rem;font-weight:800;color:#4a5568;background:#edf2f7;text-transform:uppercase;letter-spacing:.5px;">${catNames[cat]||cat}</div>`;
+    items.forEach(s => {
+      const label = s.label.replace(/^.{2}\s/,'');
+      html += `<div class="sugg-item" data-i="${globalIdx}" data-label="${label}" data-cat="${s.cat}"
+        style="padding:7px 14px;cursor:pointer;font-size:0.85rem;border-bottom:1px solid #f5f5f5;"
+        onmousedown="pickSuggestion(this)"
+        onmouseover="highlightSugg(${globalIdx})">${s.label}</div>`;
+      globalIdx++;
+    });
+  });
+
+  box.innerHTML = html;
+  box.style.display = 'block';
+  suggFocus = -1;
+}
+
+function hideSuggestions() {
+  document.getElementById('suggBox').style.display = 'none';
+  suggFocus = -1;
+  _allSuggOpen = false;
+}
+
+function highlightSugg(i) {
+  suggFocus = i;
+  document.querySelectorAll('.sugg-item').forEach((el, idx) => {
+    el.style.background = idx === i ? '#ebf8ff' : '';
+  });
+}
+
+function pickSuggestion(el) {
+  document.getElementById('qTitle').value = el.dataset.label;
+  // Sélectionner la catégorie correspondante
+  const catSel = document.getElementById('qCat');
+  if (el.dataset.cat) catSel.value = el.dataset.cat;
+  hideSuggestions();
+}
+
+function handleSuggestKey(e) {
+  const items = document.querySelectorAll('.sugg-item');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    suggFocus = Math.min(suggFocus + 1, items.length - 1);
+    highlightSugg(suggFocus);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    suggFocus = Math.max(suggFocus - 1, 0);
+    highlightSugg(suggFocus);
+  } else if (e.key === 'Enter' && suggFocus >= 0) {
+    e.preventDefault();
+    pickSuggestion(items[suggFocus]);
+    quickAdd();
+  } else if (e.key === 'Escape') {
+    hideSuggestions();
+  }
+}
+
+async function moveTask(id, status) {
+  if (window.fbUpdate) {
+    await window.fbUpdate(id, { status });
+  } else {
+    if (window._tasks[id]) window._tasks[id].status = status;
+    render();
+  }
+}
+
+async function deleteTask(id) {
+  if (!confirm('Supprimer cette tâche ?')) return;
+  if (window.fbDelete) {
+    await window.fbDelete(id);
+  } else {
+    delete window._tasks[id];
+    render();
+  }
+}
+
+async function clearDone() {
+  if (!confirm('Supprimer toutes les tâches terminées ?')) return;
+  const doneIds = Object.keys(window._tasks).filter(k => window._tasks[k].status === 'done');
+  for (const id of doneIds) {
+    if (window.fbDelete) await window.fbDelete(id);
+    else delete window._tasks[id];
+  }
+  if (!window.fbDelete) render();
+  toast(`🗑 ${doneIds.length} tâche(s) supprimée(s)`);
+}
+
+// ── Drag & Drop ──────────────────────────────────────────────
+function allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-target'); }
+document.querySelectorAll('.col').forEach(col => {
+  col.addEventListener('dragleave', () => col.classList.remove('drag-target'));
+});
+
+async function drop(e, status) {
+  e.preventDefault();
+  document.querySelectorAll('.col').forEach(c => c.classList.remove('drag-target'));
+  if (!dragId) return;
+  await moveTask(dragId, status);
+  dragId = null;
+}
+
+// ══════════════════════════════════════════════════════════════
+// COULEURS PAR PERSONNE
+// ══════════════════════════════════════════════════════════════
+const PERSON_COLORS = {
+  'Machin': { bg: '#bee3f8', text: '#1a365d', border: '#90cdf4' },
+  'Bidule': { bg: '#fc8181', text: '#742a2a', border: '#e53e3e' },
+  'Bibi':   { bg: '#c6f6d5', text: '#1a4731', border: '#68d391' },
+};
+
+function getAuthorStyle(author) {
+  if (!author) return '';
+  const names = author.split(',').map(n => n.trim()).filter(Boolean);
+  if (names.length === 1) {
+    const c = PERSON_COLORS[names[0]];
+    if (c) return `background:${c.bg};color:${c.text};border:1px solid ${c.border};`;
+    return 'background:#e2e8f0;color:#4a5568;border:1px solid #cbd5e0;';
+  }
+  // Mix de couleurs : dégradé avec les couleurs des personnes
+  const colors = names.map(n => (PERSON_COLORS[n] || { bg: '#e2e8f0' }).bg);
+  if (colors.length === 2) {
+    return `background:linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%);color:#2d3748;border:1px solid #cbd5e0;`;
+  }
+  const pct = 100 / colors.length;
+  const stops = colors.map((c, i) => `${c} ${Math.round(i*pct)}%, ${c} ${Math.round((i+1)*pct)}%`).join(', ');
+  return `background:linear-gradient(135deg, ${stops});color:#2d3748;border:1px solid #cbd5e0;`;
+}
+
+function getCardBackground(author) {
+  if (!author) return '';
+  const names = author.split(',').map(n => n.trim()).filter(Boolean);
+  if (names.length === 1) {
+    const c = PERSON_COLORS[names[0]];
+    if (c) return `background:${c.bg};border:1px solid ${c.border};`;
+    return '';
+  }
+  const colors = names.map(n => (PERSON_COLORS[n] || { bg: '#e2e8f0' }).bg);
+  const borders = names.map(n => (PERSON_COLORS[n] || { border: '#cbd5e0' }).border);
+  if (colors.length === 2) {
+    return `background:linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%);border:1px solid ${borders[0]};`;
+  }
+  const pct = 100 / colors.length;
+  const stops = colors.map((c, i) => `${c} ${Math.round(i*pct)}%, ${c} ${Math.round((i+1)*pct)}%`).join(', ');
+  return `background:linear-gradient(135deg, ${stops});border:1px solid ${borders[0]};`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// ÉDITION TÂCHE
+// ══════════════════════════════════════════════════════════════
+let editId = null;
+
+// ── Sélecteurs d'heure (H+M 5 min) ──────────────────────────
+function buildEditTimePickers() {
+  let hOpts = '<option value="">hh</option>';
+  for (let h = 0; h < 24; h++) hOpts += `<option value="${String(h).padStart(2,'0')}">${String(h).padStart(2,'0')}</option>`;
+  let mOpts = '<option value="">mm</option>';
+  for (let m = 0; m < 60; m += 5) mOpts += `<option value="${String(m).padStart(2,'0')}">${String(m).padStart(2,'0')}</option>`;
+  ['editTimeH','editTimeEndH'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = hOpts; });
+  ['editTimeM','editTimeEndM'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = mOpts; });
+}
+function setEditTime(hId, mId, val) {
+  const parts = (val || '').split(':');
+  const h = document.getElementById(hId); if(h) h.value = parts[0] || '';
+  const m = document.getElementById(mId); if(m) m.value = parts[1] ? parts[1].slice(0,2) : '';
+}
+function getEditTime(hId, mId) {
+  const h = (document.getElementById(hId)||{}).value || '';
+  const m = (document.getElementById(mId)||{}).value || '';
+  return h && m ? `${h}:${m}` : '';
+}
+
+function openEdit(id) {
+  const t = window._tasks[id];
+  if (!t) return;
+  editId = id;
+  document.getElementById('editTitle').value  = t.title || '';
+  document.getElementById('editCat').value    = t.cat   || 'bricolage';
+  document.getElementById('editPrio').value   = t.prio  || 'moyenne';
+  document.getElementById('editDate').value   = t.date  || '';
+  document.getElementById('editAlert').value  = t.alertDays || 7;
+  document.getElementById('editNotes').value  = t.notes  || '';
+  setEditTime('editTimeH','editTimeM', t.time || '');
+  setEditTime('editTimeEndH','editTimeEndM', t.timeEnd || '');
+  // Remplir les checkboxes d'assignation
+  const checksWrap = document.getElementById('editAssignChecks');
+  checksWrap.innerHTML = '';
+  const currentAssigned = (t.author || '').split(',').map(n => n.trim()).filter(Boolean);
+  const cfg = JSON.parse(localStorage.getItem('pmConfig') || '{}');
+  const membersRaw = cfg.members || 'Machin:kebo80@hotmail.fr\nBidule:emilieancel22@yahoo.fr\nBibi:abbigaelancel@gmail.com';
+  membersRaw.split('\n').forEach(line => {
+    const name = line.split(':')[0].trim();
+    if (!name) return;
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.88rem;';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = name;
+    cb.id = 'editAssign_' + name;
+    cb.checked = currentAssigned.includes(name);
+    cb.style.cursor = 'pointer';
+    lbl.appendChild(cb);
+    lbl.appendChild(document.createTextNode(name));
+    checksWrap.appendChild(lbl);
+  });
+  document.getElementById('editOverlay').style.display = 'flex';
+}
+
+function closeEdit() {
+  document.getElementById('editOverlay').style.display = 'none';
+  editId = null;
+}
+
+async function saveEdit() {
+  if (!editId) return;
+  const editCat = document.getElementById('editCat').value;
+  const prevStatus = (window._tasks[editId] || {}).status || 'todo';
+  // Si on change la cat en rdv → colonne rdv ; si on enlève rdv d'une tâche rdv → todo
+  const newStatus = editCat === 'rdv'
+    ? 'rdv'
+    : prevStatus === 'rdv' ? 'todo' : prevStatus;
+  const updates = {
+    title:     document.getElementById('editTitle').value.trim(),
+    cat:       editCat,
+    prio:      document.getElementById('editPrio').value,
+    date:      document.getElementById('editDate').value,
+    time:      getEditTime('editTimeH','editTimeM'),
+    timeEnd:   getEditTime('editTimeEndH','editTimeEndM'),
+    alertDays: parseInt(document.getElementById('editAlert').value) || 7,
+    author:    [...document.querySelectorAll('#editAssignChecks input[type=checkbox]:checked')].map(cb => cb.value).join(', ') || '',
+    notes:     document.getElementById('editNotes').value.trim(),
+    status:    newStatus,
+  };
+  if (!updates.title) { toast('⚠ Le titre ne peut pas être vide !'); return; }
+  if (window.fbUpdate) {
+    await window.fbUpdate(editId, updates);
+  } else {
+    window._tasks[editId] = { ...window._tasks[editId], ...updates };
+    render();
+  }
+  closeEdit();
+  toast('✅ Tâche modifiée !');
+}
+
+document.getElementById('editOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('editOverlay')) closeEdit();
+});
+
+// ── Toast ─────────────────────────────────────────────────────
+function toast(msg, duration = 2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.style.display = 'none', duration);
+}
+
+// ══════════════════════════════════════════════════════════════
+// BANNIÈRE RAPPELS DU JOUR
+// ══════════════════════════════════════════════════════════════
+function showRappelBannerPM() {
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const now = new Date();
+  const todayStr    = fmt(now);
+  const tomorrowStr = fmt(new Date(now.getFullYear(), now.getMonth(), now.getDate()+1));
+
+  const tasks = Object.values(window._tasks || {});
+  const evtsToday    = tasks.filter(t => t.date === todayStr    && t.status !== 'done');
+  const evtsTomorrow = tasks.filter(t => t.date === tomorrowStr && t.status !== 'done');
+  if (!evtsToday.length && !evtsTomorrow.length) return;
+
+  const catEmoji = { bricolage:'🔨', jardin:'🌿', entretien:'🔧', admin:'📋', rdv:'📅', agenda:'📅' };
+  const fmtEvts = evts => evts.map(t => {
+    const em  = catEmoji[t.cat] || '📌';
+    const who = t.author ? ` (${t.author.split(',')[0].trim()})` : '';
+    return `<span class="rappel-item">${em} ${t.title}${who}</span>`;
+  }).join('');
+
+  let html = '';
+  if (evtsToday.length)    html += `📅 <strong>Aujourd'hui :</strong> ${fmtEvts(evtsToday)} `;
+  if (evtsTomorrow.length) html += `📅 <strong>Demain :</strong> ${fmtEvts(evtsTomorrow)}`;
+
+  const banner = document.getElementById('rappelBannerPM');
+  if (!banner) return;
+  document.getElementById('rappelContentPM').innerHTML = html;
+  banner.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════════════
+// ALERTES MAIL — EmailJS
+// ══════════════════════════════════════════════════════════════
+function runAlerts() {
+  const ejsCfg = JSON.parse(localStorage.getItem('pmConfig') || '{}');
+  if (!ejsCfg.ejsSvcId || !ejsCfg.ejsTplId || !ejsCfg.ejsPubKey) {
+    toast('⚠ Configurer EmailJS d\'abord (bouton ⚙)', 4000);
+    openConfig();
+    return;
+  }
+
+  emailjs.init(ejsCfg.ejsPubKey);
+  const today  = new Date(); today.setHours(0,0,0,0);
+  const tasks  = Object.values(window._tasks);
+  const alerts = [];
+
+  tasks.forEach(t => {
+    if (t.status === 'done' || !t.date) return;
+    const d    = new Date(t.date + 'T00:00:00');
+    const diff = Math.round((d - today) / 86400000);
+    const seuil = t.alertDays || 7;
+    if (diff <= seuil) {
+      alerts.push({ ...t, joursAv: diff });
+    }
+  });
+
+  if (alerts.length === 0) { toast('✅ Aucune alerte à envoyer !'); return; }
+
+  // Construire le tableau HTML pour le mail
+  const rows = alerts.map(a => {
+    const statut = a.joursAv < 0 ? `⚠ Dépassé de ${Math.abs(a.joursAv)}j` : `Dans ${a.joursAv}j`;
+    return `• [${a.prio.toUpperCase()}] ${a.title} — ${a.author} — ${statut}`;
+  }).join('\n');
+
+  // Récupérer les mails des membres
+  const membersRaw = ejsCfg.members || 'Kevin:\nMarie:\nLuc:';
+  const membersMap = {};
+  membersRaw.split('\n').forEach(line => {
+    const [name, mail] = line.split(':');
+    if (name && mail && mail.trim()) membersMap[name.trim()] = mail.trim();
+  });
+
+  // Grouper par personne
+  const byPerson = {};
+  alerts.forEach(a => {
+    if (!byPerson[a.author]) byPerson[a.author] = [];
+    byPerson[a.author].push(a);
+  });
+
+  let sent = 0;
+  Object.entries(byPerson).forEach(([person, ptasks]) => {
+    const mail = membersMap[person];
+    if (!mail) return;
+
+    // Un mail par tâche en alerte (variables séparées pour le template)
+    ptasks.forEach(a => {
+      const statut = a.joursAv < 0
+        ? `⚠️ Dépassée de ${Math.abs(a.joursAv)} jour(s)`
+        : a.joursAv === 0 ? "⚡ Aujourd'hui !"
+        : `Dans ${a.joursAv} jour(s)`;
+      const dateFormatted = a.date
+        ? new Date(a.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
+        : '—';
+      const catLabels = { bricolage:'🔨 Bricolage', jardin:'🌿 Jardin', entretien:'🔧 Entretien', admin:'📋 Admin', rdv:'📅 Rendez-vous', agenda:'📅 Agenda' };
+      const prioLabels = { haute:'🔴 Haute', moyenne:'🟡 Moyenne', basse:'🟢 Basse' };
+
+      emailjs.send(ejsCfg.ejsSvcId, ejsCfg.ejsTplId, {
+        to_email:    mail,
+        to_name:     person,
+        subject:     `🏡 Planning Maison — Rappel : ${a.title}`,
+        task_title:    a.title || '—',
+        task_deadline: `${dateFormatted} (${statut})`,
+        task_category: catLabels[a.cat] || a.cat || '—',
+        assigned_to:   a.author || '—',
+        task_prio:     prioLabels[a.prio] || a.prio || '—',
+        task_notes:    a.notes || '',
+        message:     `Bonjour ${person},\n\nLa tâche suivante approche de son échéance :\n\n📌 ${a.title}\n📅 ${dateFormatted}\n⏰ ${statut}\n\nConnectez-vous au planning pour mettre à jour le statut.\n\nBonne journée ! 🏡`,
+      });
+      sent++;
+    });
+  });
+
+  toast(`📧 ${sent} mail(s) envoyé(s) pour ${alerts.length} alerte(s) !`, 4000);
+}
+
+// ══════════════════════════════════════════════════════════════
+// CONFIG MODAL
+// ══════════════════════════════════════════════════════════════
+function openConfig() {
+  const c = JSON.parse(localStorage.getItem('pmConfig') || '{}');
+  document.getElementById('cfgDbUrl').value     = c.dbUrl     || '';
+  document.getElementById('cfgApiKey').value    = c.apiKey    || '';
+  document.getElementById('cfgProjectId').value = c.projectId || '';
+  document.getElementById('cfgSvcId').value     = c.ejsSvcId  || '';
+  document.getElementById('cfgTplId').value     = c.ejsTplId  || '';
+  document.getElementById('cfgPubKey').value    = c.ejsPubKey || '';
+  const defaultMembers = 'Machin:kebo80@hotmail.fr\nBidule:emilieancel22@yahoo.fr\nBibi:abbigaelancel@gmail.com';
+  document.getElementById('cfgMembers').value   = c.members   || defaultMembers;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeConfig() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function saveConfig() {
+  const c = {
+    dbUrl:     document.getElementById('cfgDbUrl').value.trim(),
+    apiKey:    document.getElementById('cfgApiKey').value.trim(),
+    projectId: document.getElementById('cfgProjectId').value.trim(),
+    ejsSvcId:  document.getElementById('cfgSvcId').value.trim(),
+    ejsTplId:  document.getElementById('cfgTplId').value.trim(),
+    ejsPubKey: document.getElementById('cfgPubKey').value.trim(),
+    members:   document.getElementById('cfgMembers').value,
+  };
+  localStorage.setItem('pmConfig', JSON.stringify(c));
+  updateMemberSelect(c.members);
+  closeConfig();
+  toast('💾 Configuration sauvegardée ! Rechargez la page pour activer Firebase.', 5000);
+}
+
+// Fermer modal en cliquant dehors
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeConfig();
+});
+
+// ══════════════════════════════════════════════════════════════
+// MODE SOMBRE
+// ══════════════════════════════════════════════════════════════
+function toggleDark() {
+  darkMode = !darkMode;
+  document.body.classList.toggle('dark', darkMode);
+  localStorage.setItem('pmDark', darkMode ? '1' : '0');
+  document.getElementById('darkBtn').textContent = darkMode ? '☀️' : '🌙';
+}
+if (darkMode) document.getElementById('darkBtn').textContent = '☀️';
+
+// ══════════════════════════════════════════════════════════════
+// FILTRES PAR PERSONNE
+// ══════════════════════════════════════════════════════════════
+function buildFilterButtons() {
+  const bar = document.getElementById('filterBar');
+  // Garder uniquement le bouton "Tous"
+  bar.innerHTML = '<span>Filtrer :</span><button class="filter-btn filter-btn-all' + (!activeFilter ? ' active' : '') + '" onclick="setFilter(\'\')">Tous</button>';
+  // Ajouter un bouton par membre
+  const cfg2 = JSON.parse(localStorage.getItem('pmConfig') || '{}');
+  const defaultM = 'Machin:kebo80@hotmail.fr\nBidule:emilieancel22@yahoo.fr\nBibi:abbigaelancel@gmail.com';
+  (cfg2.members || defaultM).split('\n').forEach(line => {
+    const name = line.split(':')[0].trim();
+    if (!name) return;
+    const c = PERSON_COLORS[name] || { border:'#cbd5e0', bg:'#e2e8f0', text:'#4a5568' };
+    const isActive = activeFilter === name;
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (isActive ? ' active' : '');
+    btn.style.cssText = `color:${isActive ? c.text : c.border};background:${isActive ? c.bg : 'white'};border-color:${c.border};font-weight:600;`;
+    btn.textContent = name;
+    btn.onclick = () => setFilter(name);
+    bar.appendChild(btn);
+  });
+}
+
+function setFilter(name) {
+  activeFilter = name;
+  render();
+}
+
+// ══════════════════════════════════════════════════════════════
+// TEST EMAIL
+// ══════════════════════════════════════════════════════════════
+function testEmail() {
+  const ejsCfg = JSON.parse(localStorage.getItem('pmConfig') || '{}');
+  if (!ejsCfg.ejsSvcId || !ejsCfg.ejsTplId || !ejsCfg.ejsPubKey) {
+    toast('⚠ Remplis d\'abord les champs EmailJS ci-dessus !', 4000);
+    return;
+  }
+  // Récupérer le premier email de la liste membres
+  const defaultM = 'Machin:kebo80@hotmail.fr\nBidule:emilieancel22@yahoo.fr\nBibi:abbigaelancel@gmail.com';
+  const firstLine = (ejsCfg.members || defaultM).split('\n')[0];
+  const parts = firstLine.split(':');
+  const toName  = parts[0].trim();
+  const toEmail = parts[1] ? parts[1].trim() : '';
+  if (!toEmail) { toast('⚠ Aucun email trouvé dans la liste membres', 4000); return; }
+
+  emailjs.init(ejsCfg.ejsPubKey);
+  emailjs.send(ejsCfg.ejsSvcId, ejsCfg.ejsTplId, {
+    to_email:    toEmail,
+    to_name:     toName,
+    subject:     '🧪 Test — Planning Maison',
+    task_title:    '✅ Email de test',
+    task_deadline: new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' }),
+    task_category: '🧪 Test',
+    assigned_to:   toName,
+    task_prio:     '🟢 Basse',
+    task_notes:    'Ceci est un email de test.',
+    message:     `Bonjour ${toName},\n\nCeci est un email de test envoyé depuis le Planning Maison.\nSi tu le reçois, EmailJS est bien configuré ! ✅\n\nBonne journée ! 🏡`,
+  }).then(() => {
+    toast(`✅ Email de test envoyé à ${toEmail} !`, 4000);
+  }).catch(err => {
+    toast('❌ Erreur : ' + (err.text || JSON.stringify(err)), 5000);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// ARCHIVAGE AUTO — tâches terminées de + de 30 jours
+// ══════════════════════════════════════════════════════════════
+function autoArchive() {
+  const limit = new Date();
+  limit.setDate(limit.getDate() - 30);
+  Object.values(window._tasks).forEach(t => {
+    if (t.status !== 'done') return;
+    const created = t.createdAt ? new Date(t.createdAt) : null;
+    if (created && created < limit) {
+      if (window.fbDelete) window.fbDelete(t.id);
+      else delete window._tasks[t.id];
+    }
+  });
+}
+// Lancer l'archivage auto une fois au démarrage (après 5s)
+setTimeout(autoArchive, 5000);
+</script>
+</body>
+</html>
