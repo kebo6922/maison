@@ -4,6 +4,41 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agenda Familial – Partagé</title>
+<script>
+(function(){
+  const MOT_DE_PASSE = 'Maison05';
+  const CLE = 'maison_auth';
+  if (localStorage.getItem(CLE) !== MOT_DE_PASSE) {
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f0f4f8;font-family:sans-serif;">
+          <div style="background:white;padding:40px;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.12);text-align:center;max-width:320px;width:90%;">
+            <div style="font-size:2.5rem;margin-bottom:12px;">🏠</div>
+            <h2 style="margin:0 0 8px;color:#2d3748;">Agenda Familial</h2>
+            <p style="color:#718096;font-size:0.9rem;margin-bottom:24px;">Entrez le mot de passe pour accéder</p>
+            <input id="mdp" type="password" placeholder="Mot de passe" autofocus
+              style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;box-sizing:border-box;outline:none;margin-bottom:12px;"
+              onkeydown="if(event.key==='Enter')verif()">
+            <div id="err" style="color:#e53e3e;font-size:0.85rem;min-height:20px;margin-bottom:8px;"></div>
+            <button onclick="verif()" style="width:100%;padding:12px;background:#667eea;color:white;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;">Entrer</button>
+          </div>
+        </div>`;
+      window.verif = function() {
+        const val = document.getElementById('mdp').value;
+        if (val === MOT_DE_PASSE) {
+          localStorage.setItem(CLE, MOT_DE_PASSE);
+          location.reload();
+        } else {
+          document.getElementById('err').textContent = 'Mot de passe incorrect';
+          document.getElementById('mdp').value = '';
+          document.getElementById('mdp').focus();
+        }
+      };
+    });
+    document.addEventListener('DOMContentLoaded', function(e) { e.stopImmediatePropagation(); }, true);
+  }
+})();
+</script>
 
 <!-- Firebase SDK (même base que le planning maison) -->
 <script type="module">
@@ -429,7 +464,8 @@ window._tasks = {};
 // HELPERS
 // ═══════════════════════════════════════════════════════
 function toDateStr(d) {
-  return d.toISOString().slice(0, 10);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
 
 // Retourne tous les events (agenda natifs + tâches rdv du planning)
