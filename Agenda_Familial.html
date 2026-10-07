@@ -335,13 +335,7 @@ body.dark .btn-cancel { background: #4a5568; color: #e2e8f0; }
   <h1>📅 Agenda Familial</h1>
   <div class="header-right">
     <a class="link-planning" href="Planning_Maison_Partage.html">🏠 Planning maison</a>
-    <select id="agUserSelect" onchange="onAgUserChange()"
-      style="padding:5px 10px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.82rem;font-weight:600;cursor:pointer;outline:none;">
-      <option value="" style="color:#1a202c;">👤 Qui êtes-vous ?</option>
-      <option value="Machin" style="color:#1a202c;">Machin</option>
-      <option value="Bidule" style="color:#1a202c;">Bidule</option>
-      <option value="Bibi" style="color:#1a202c;">Bibi</option>
-    </select>
+    <span id="agUserBadge" style="padding:5px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.82rem;font-weight:600;">👤 ?</span>
     <button class="btn-hdr" onclick="toggleDark()" id="darkBtn">🌙</button>
   </div>
 </header>
@@ -512,7 +506,7 @@ body.dark .btn-cancel { background: #4a5568; color: #e2e8f0; }
 const MEMBERS = ['Machin', 'Bidule', 'Bibi'];
 const PERSON_COLORS = {
   'Machin': { bg: '#bee3f8', text: '#1a365d', border: '#90cdf4' },
-  'Bidule': { bg: '#fc8181', text: '#fff',    border: '#e53e3e' },
+  'Bidule': { bg: '#fc8181', text: '#742a2a', border: '#e53e3e' },
   'Bibi':   { bg: '#c6f6d5', text: '#1a4731', border: '#68d391' },
 };
 const TYPE_CLASS = {
@@ -552,13 +546,12 @@ let darkMode = localStorage.getItem('pmDark') === '1';
 if (darkMode) document.body.classList.add('dark');
 document.getElementById('darkBtn').textContent = darkMode ? '☀️' : '🌙';
 
-// Appliquer le profil au sélecteur header
-if (currentUser) document.getElementById('agUserSelect').value = currentUser;
-
-function onAgUserChange() {
-  currentUser = document.getElementById('agUserSelect').value;
-  localStorage.setItem('pmUser', currentUser);
+// Afficher le profil dans le badge header (lecture seule)
+function updateUserBadge() {
+  const badge = document.getElementById('agUserBadge');
+  if (badge) badge.textContent = currentUser ? '👤 ' + currentUser : '👤 ?';
 }
+updateUserBadge();
 
 function toggleDark() {
   darkMode = !darkMode;
