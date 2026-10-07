@@ -1205,7 +1205,7 @@ function getCardBackground(author) {
   const colors = names.map(n => (PERSON_COLORS[n] || { bg: '#e2e8f0' }).bg);
   const borders = names.map(n => (PERSON_COLORS[n] || { border: '#cbd5e0' }).border);
   if (colors.length === 2) {
-    return `background:linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%);border:1px solid ${borders[0]};color:#2d3748;`;
+    return `background:linear-gradient(135deg, ${colors[0]} 0%, ${colors[0]} calc(50% - 1px), ${colors[1]} calc(50% + 1px), ${colors[1]} 100%);border:1px solid ${borders[0]};color:#2d3748;`;
   }
   const pct = 100 / colors.length;
   const stops = colors.map((c, i) => `${c} ${Math.round(i*pct)}%, ${c} ${Math.round((i+1)*pct)}%`).join(', ');
