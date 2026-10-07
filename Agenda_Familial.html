@@ -523,7 +523,7 @@ function getPersonStyle(author) {
   const borders = names.map(n => (PERSON_COLORS[n] || { border: '#e2e8f0' }).border);
   let bgStyle;
   if (colors.length === 2) {
-    bgStyle = `linear-gradient(135deg, ${colors[0]} 0%, ${colors[0]} 45%, ${colors[1]} 55%, ${colors[1]} 100%)`;
+    bgStyle = `linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%)`;
   } else {
     const pct = 100 / colors.length;
     const stops = colors.map((c, i) => `${c} ${Math.round(i*pct)}%, ${c} ${Math.round((i+1)*pct)}%`).join(', ');
