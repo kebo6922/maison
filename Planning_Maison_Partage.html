@@ -105,14 +105,22 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c;
 
 /* ── Header ─────────────────────────────────────────────────── */
 header {
-  background: linear-gradient(135deg, #2d6a4f, #40916c);
-  color: white; padding: 16px 24px;
+  background: linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  color: white; padding: 14px 18px;
   display: flex; align-items: center; justify-content: space-between;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  flex-wrap: wrap; gap: 10px;
+  flex-wrap: wrap; gap: 8px;
+  position: sticky; top: 0; z-index: 200;
 }
-header h1 { font-size: 1.4rem; font-weight: 700; }
-.header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+header h1 { font-size: 1.1rem; font-weight: 800; }
+.header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nav-link { padding:6px 12px; border-radius:20px; border:2px solid rgba(255,255,255,.5);
+  background:rgba(255,255,255,.15); color:white; font-size:.8rem; font-weight:600;
+  text-decoration:none; white-space:nowrap; transition:background .15s; }
+.nav-link:hover { background:rgba(255,255,255,.28); }
+.nav-link.active { background:rgba(255,255,255,.35); border-color:white; }
+.btn-hdr { padding:6px 12px; border-radius:20px; border:2px solid rgba(255,255,255,.5); background:rgba(255,255,255,.15); color:white; font-size:.85rem; cursor:pointer; transition:background .15s; }
+.btn-hdr:hover { background:rgba(255,255,255,.28); }
 .user-select { padding: 6px 12px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.5);
   background: rgba(255,255,255,0.15); color: white; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
 .user-select option { background: #2d6a4f; color: white; }
@@ -380,18 +388,19 @@ self.addEventListener('fetch',e=>{
 
 <header>
   <div>
-    <h1>🏡 Planning Maison</h1>
-    <div style="font-size:0.8rem;opacity:0.8;margin-top:2px;" id="dateDisplay"></div>
+    <h1>🏠 Planning Maison</h1>
+    <div style="font-size:.75rem;opacity:.75;margin-top:2px;" id="dateDisplay"></div>
   </div>
   <div class="header-right">
-    <div class="online-badge" id="syncStatus">⏳ Connexion…</div>
-    <span id="pmUserBadge" onclick="switchProfile()" title="Changer de profil" style="padding:5px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.82rem;font-weight:600;cursor:pointer;">👤 ?</span>
-    <a href="Agenda_Familial.html" style="padding:6px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;text-decoration:none;">📅 Agenda</a>
-    <a href="Courses_Maison.html" style="padding:6px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;text-decoration:none;">🛒 Courses</a>
-    <a href="Stats_Famille.html" style="padding:6px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;text-decoration:none;">📊 Stats</a>
-    <a href="Notifications_Config.html" style="padding:6px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;text-decoration:none;">🔔 Notifs</a>
-    <button class="btn" style="background:rgba(255,255,255,0.2);color:white;font-size:0.8rem;" onclick="toggleDark()" id="darkBtn">🌙</button>
-    <button class="btn" style="background:rgba(255,255,255,0.2);color:white;font-size:0.8rem;" onclick="openConfig()">⚙ Config</button>
+    <div class="online-badge" id="syncStatus" style="font-size:.72rem;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px;">⏳</div>
+    <a class="nav-link active" href="Planning_Maison_Partage.html">🏠 Planning</a>
+    <a class="nav-link" href="Agenda_Familial.html">📅 Agenda</a>
+    <a class="nav-link" href="Courses_Maison.html">🛒 Courses</a>
+    <a class="nav-link" href="Stats_Famille.html">📊 Stats</a>
+    <a class="nav-link" href="Notifications_Config.html">🔔 Notifs</a>
+    <span id="pmUserBadge" onclick="switchProfile()" title="Changer de profil" class="nav-link" style="cursor:pointer;">👤 ?</span>
+    <button class="btn-hdr" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <button class="btn-hdr" onclick="openConfig()">⚙</button>
   </div>
 </header>
 

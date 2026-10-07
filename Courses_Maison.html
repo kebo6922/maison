@@ -190,6 +190,37 @@
     Object.entries(items).forEach(([id,item])=>{ if(item.done) remove(ref(db,'maison/courses/'+id)); });
   };
 
+  // ── Historique articles (localStorage) ──────────────
+  const HISTORY_KEY = 'courses_history';
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || {}; } catch { return {}; }
+  }
+  function saveToHistory(name, category) {
+    const h = loadHistory();
+    // Clé = nom normalisé en minuscule pour dédoublonner
+    const key = name.toLowerCase().trim();
+    h[key] = { name: name.trim(), category }; // màj catégorie à chaque ajout
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+    refreshDatalist();
+  }
+  function refreshDatalist() {
+    const dl = document.getElementById('articleSuggestions');
+    if (!dl) return;
+    const h = loadHistory();
+    dl.innerHTML = Object.values(h)
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+      .map(e => `<option value="${e.name}" data-cat="${e.category}">`)
+      .join('');
+  }
+  // Auto-sélectionner la catégorie mémorisée quand on choisit une suggestion
+  function onArticleInput() {
+    const nameEl = document.getElementById('newItemName');
+    const catEl  = document.getElementById('newItemCat');
+    const h = loadHistory();
+    const key = nameEl.value.toLowerCase().trim();
+    if (h[key]) catEl.value = h[key].category;
+  }
+
   function addItem(){
     const nameEl = document.getElementById('newItemName');
     const qtyEl  = document.getElementById('newItemQty');
@@ -197,14 +228,17 @@
     const name = nameEl.value.trim();
     if(!name) return;
     if(!currentUser){ alert('Connectez-vous d\'abord (cliquez sur 👤)'); return; }
+    const category = catEl.value;
     push(coursesRef,{
-      name, qty: qtyEl.value.trim(), category: catEl.value,
+      name, qty: qtyEl.value.trim(), category,
       addedBy: currentUser, addedAt: Date.now(), done: false
     });
+    saveToHistory(name, category);
     nameEl.value=''; qtyEl.value='';
     nameEl.focus();
   }
   window.addItem = addItem;
+  window.onArticleInput = onArticleInput;
 
   // Écoute Firebase temps réel
   onValue(coursesRef, snap=>{
@@ -216,7 +250,12 @@
   document.addEventListener('DOMContentLoaded',()=>{
     updateBadge();
     const nameEl = document.getElementById('newItemName');
-    if(nameEl) nameEl.addEventListener('keydown', e=>{ if(e.key==='Enter') addItem(); });
+    if(nameEl) {
+      nameEl.addEventListener('keydown', e=>{ if(e.key==='Enter') addItem(); });
+      nameEl.setAttribute('list', 'articleSuggestions');
+      nameEl.setAttribute('oninput', 'onArticleInput()');
+    }
+    refreshDatalist();
 
     if(!currentUser){
       setTimeout(()=>{
@@ -261,35 +300,24 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: var(--bg); color: var(--fg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; padding-bottom: env(safe-area-inset-bottom,0); }
 
-/* HEADER */
+/* HEADER — même style que Planning/Agenda/Stats */
 .app-header {
-  background: var(--header);
+  background: linear-gradient(135deg,#667eea 0%,#764ba2 100%);
   color: white;
-  padding: 14px 16px;
+  padding: 14px 18px;
   padding-top: calc(14px + env(safe-area-inset-top,0));
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
   position: sticky; top: 0; z-index: 100;
   box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  flex-wrap: wrap;
 }
-.app-header .logo { font-size: 1.4rem; }
-.app-header h1 { font-size: 1rem; font-weight: 700; flex: 1; }
-.count-badge { font-size: .75rem; background: rgba(255,255,255,.15); padding: 3px 10px; border-radius: 20px; }
-
-/* NAV */
-.nav-pills {
-  background: var(--header);
-  display: flex; gap: 6px; padding: 0 16px 10px;
-  border-bottom: 1px solid rgba(255,255,255,.1);
-}
-.nav-pills a {
-  color: rgba(255,255,255,.65); font-size: .8rem; text-decoration: none;
-  padding: 4px 12px; border-radius: 20px;
-  transition: all .15s;
-}
-.nav-pills a:hover, .nav-pills a.active { color: white; background: rgba(255,255,255,.2); }
-
-.badge-row { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
-#coursesUserBadge { padding: 5px 14px; border-radius: 20px; font-size: .82rem; font-weight: 600; cursor: pointer; background: rgba(255,255,255,.15); color: var(--fg2); border: 2px solid var(--border); }
+.app-header h1 { font-size: 1.1rem; font-weight: 800; display:flex; align-items:center; gap:8px; }
+.count-badge { font-size: .75rem; background: rgba(255,255,255,.2); padding: 3px 10px; border-radius: 20px; }
+.header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nav-link { padding: 6px 12px; border-radius: 20px; border: 2px solid rgba(255,255,255,.5); background: rgba(255,255,255,.15); color: white; font-size: .8rem; font-weight: 600; text-decoration: none; white-space: nowrap; transition: background .15s; }
+.nav-link:hover { background: rgba(255,255,255,.28); }
+.nav-link.active { background: rgba(255,255,255,.35); border-color: white; }
+#coursesUserBadge { padding: 5px 14px; border-radius: 20px; font-size: .82rem; font-weight: 600; cursor: pointer; background: rgba(255,255,255,.15); color: white; border: 2px solid rgba(255,255,255,.5); white-space: nowrap; }
 #clearDoneBtn { display: none; align-items: center; gap: 5px; background: #e53e3e; color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: .8rem; cursor: pointer; font-weight: 600; }
 
 /* FORM AJOUT */
@@ -343,25 +371,22 @@ body { background: var(--bg); color: var(--fg); font-family: -apple-system, Blin
 <body>
 
 <div class="app-header">
-  <span class="logo">🛒</span>
-  <h1>Liste de Courses</h1>
-  <span class="count-badge" id="countBadge"></span>
-</div>
-<div class="nav-pills">
-  <a href="Planning_Maison_Partage.html">🏠 Planning</a>
-  <a href="Agenda_Familial.html">📅 Agenda</a>
-  <a href="Courses_Maison.html" class="active">🛒 Courses</a>
-  <a href="Stats_Famille.html">📊 Stats</a>
-  <a href="Notifications_Config.html">🔔 Notifs</a>
+  <h1>🛒 Liste de Courses <span class="count-badge" id="countBadge"></span></h1>
+  <div class="header-right">
+    <a class="nav-link" href="Planning_Maison_Partage.html">🏠 Planning</a>
+    <a class="nav-link" href="Agenda_Familial.html">📅 Agenda</a>
+    <a class="nav-link active" href="Courses_Maison.html">🛒 Courses</a>
+    <a class="nav-link" href="Stats_Famille.html">📊 Stats</a>
+    <a class="nav-link" href="Notifications_Config.html">🔔 Notifs</a>
+    <span id="coursesUserBadge" onclick="switchProfile()" title="Changer de profil">👤 ?</span>
+    <button id="clearDoneBtn" onclick="clearDone()" style="display:none;background:#e53e3e;color:white;border:none;border-radius:8px;padding:6px 12px;font-size:.8rem;cursor:pointer;font-weight:600;">🗑 Vider les cochés</button>
+  </div>
 </div>
 
-<div class="badge-row">
-  <span id="coursesUserBadge" onclick="switchProfile()" title="Changer de profil">👤 ?</span>
-  <button id="clearDoneBtn" onclick="clearDone()">🗑 Vider les cochés</button>
-</div>
+<datalist id="articleSuggestions"></datalist>
 
 <div class="add-form">
-  <input type="text" id="newItemName" placeholder="Article à ajouter…" autocomplete="off">
+  <input type="text" id="newItemName" placeholder="Article à ajouter…" autocomplete="off" list="articleSuggestions" oninput="onArticleInput()">
   <input type="text" id="newItemQty"  placeholder="Qté (ex: 2L)">
   <select id="newItemCat">
     <option value="🛒 Autre">🛒 Autre</option>

@@ -22,11 +22,14 @@
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family: system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--txt); min-height:100vh; transition:background .3s,color .3s; }
 
-  header { background:var(--hdr); color:white; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; }
+  header { background:var(--hdr); color:white; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; position:sticky; top:0; z-index:200; box-shadow:0 2px 8px rgba(0,0,0,.2); }
   header h1 { font-size:1.1rem; font-weight:800; }
   .header-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .nav-link { padding:6px 12px; border-radius:20px; border:2px solid rgba(255,255,255,.5); background:rgba(255,255,255,.15); color:white; font-size:.8rem; font-weight:600; text-decoration:none; white-space:nowrap; }
-  .btn-hdr { background:rgba(255,255,255,.2); color:white; border:none; border-radius:8px; padding:6px 12px; cursor:pointer; font-size:.85rem; }
+  .nav-link { padding:6px 12px; border-radius:20px; border:2px solid rgba(255,255,255,.5); background:rgba(255,255,255,.15); color:white; font-size:.8rem; font-weight:600; text-decoration:none; white-space:nowrap; transition:background .15s; }
+  .nav-link:hover { background:rgba(255,255,255,.28); }
+  .nav-link.active { background:rgba(255,255,255,.35); border-color:white; }
+  .btn-hdr { padding:6px 12px; border-radius:20px; border:2px solid rgba(255,255,255,.5); background:rgba(255,255,255,.15); color:white; font-size:.85rem; cursor:pointer; transition:background .15s; }
+  .btn-hdr:hover { background:rgba(255,255,255,.28); }
 
   .container { max-width:960px; margin:0 auto; padding:16px; }
 
@@ -86,13 +89,14 @@
 <body>
 
 <header>
-  <h1>📊 Stats familiale</h1>
+  <h1>📊 Stats Famille</h1>
   <div class="header-right">
-    <a class="nav-link" href="Agenda_Familial.html">📅 Agenda</a>
     <a class="nav-link" href="Planning_Maison_Partage.html">🏠 Planning</a>
+    <a class="nav-link" href="Agenda_Familial.html">📅 Agenda</a>
     <a class="nav-link" href="Courses_Maison.html">🛒 Courses</a>
+    <a class="nav-link active" href="Stats_Famille.html">📊 Stats</a>
     <a class="nav-link" href="Notifications_Config.html">🔔 Notifs</a>
-    <span id="sfUserBadge" onclick="switchProfile()" title="Changer de profil" style="padding:5px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.82rem;font-weight:600;cursor:pointer;">👤 ?</span>
+    <span id="sfUserBadge" onclick="switchProfile()" title="Changer de profil" class="nav-link" style="cursor:pointer;">👤 ?</span>
     <button class="btn-hdr" onclick="toggleDark()" id="darkBtn">🌙</button>
   </div>
 </header>

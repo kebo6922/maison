@@ -94,20 +94,28 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c;
 
 /* ── Header ── */
 header {
-  background: linear-gradient(135deg, #553c9a, #805ad5);
-  color: white; padding: 14px 24px;
+  background: linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  color: white; padding: 14px 18px;
   display: flex; align-items: center; justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2); flex-wrap: wrap; gap: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2); flex-wrap: wrap; gap: 8px;
+  position: sticky; top: 0; z-index: 200;
 }
-header h1 { font-size: 1.4rem; font-weight: 700; }
-.header-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.btn-hdr { padding: 6px 14px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.5);
-  background: rgba(255,255,255,0.15); color: white; font-size: 0.85rem;
-  font-weight: 600; cursor: pointer; transition: background .15s; }
-.btn-hdr:hover { background: rgba(255,255,255,0.3); }
-.link-planning { font-size: 0.78rem; background: rgba(255,255,255,0.2);
-  padding: 4px 10px; border-radius: 20px; color: white; text-decoration: none; }
-.link-planning:hover { background: rgba(255,255,255,0.35); }
+header h1 { font-size: 1.1rem; font-weight: 800; }
+.header-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.nav-link { padding: 6px 12px; border-radius: 20px; border: 2px solid rgba(255,255,255,.5);
+  background: rgba(255,255,255,.15); color: white; font-size: .8rem;
+  font-weight: 600; text-decoration: none; white-space: nowrap; transition: background .15s; }
+.nav-link:hover { background: rgba(255,255,255,.28); }
+.nav-link.active { background: rgba(255,255,255,.35); border-color: white; }
+.btn-hdr { padding: 6px 12px; border-radius: 20px; border: 2px solid rgba(255,255,255,.5);
+  background: rgba(255,255,255,.15); color: white; font-size: .85rem;
+  font-weight: 600; cursor: pointer; transition: background .15s; border: none; }
+.btn-hdr:hover { background: rgba(255,255,255,.28); }
+/* alias rétrocompatibilité */
+.link-planning { font-size:.8rem; background:rgba(255,255,255,.15);
+  padding:6px 12px; border-radius:20px; color:white; text-decoration:none;
+  border:2px solid rgba(255,255,255,.5); font-weight:600; white-space:nowrap; }
+.link-planning:hover { background:rgba(255,255,255,.28); }
 
 /* ── Vue semaine en haut ── */
 .week-strip {
@@ -214,8 +222,9 @@ header h1 { font-size: 1.4rem; font-weight: 700; }
 .type-jardin     { border-color: #276749; color: #1a4731; background: #c6f6d5; }
 .type-entretien  { border-color: #2b6cb0; color: #1a365d; background: #bee3f8; }
 .type-admin      { border-color: #6b46c1; color: #44337a; background: #e9d8fd; }
-.type-rdv      { border-color: #3182ce; color: #1a365d; background: #bee3f8; }
-.type-autre    { border-color: #718096; color: #2d3748; background: #edf2f7; }
+.type-rdv        { border-color: #3182ce; color: #1a365d; background: #bee3f8; }
+.type-deplacement{ border-color: #2c7a7b; color: #1d4044; background: #e6fffa; }
+.type-autre      { border-color: #718096; color: #2d3748; background: #edf2f7; }
 
 /* ── Toast ── */
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -381,11 +390,12 @@ self.addEventListener('fetch',e=>{
 <header>
   <h1>📅 Agenda Familial</h1>
   <div class="header-right">
-    <a class="link-planning" href="Planning_Maison_Partage.html">🏠 Planning maison</a>
-    <a class="link-planning" href="Courses_Maison.html">🛒 Courses</a>
-    <a class="link-planning" href="Stats_Famille.html">📊 Stats</a>
-    <a class="link-planning" href="Notifications_Config.html">🔔 Notifs</a>
-    <span id="agUserBadge" onclick="switchProfile()" title="Changer de profil" style="padding:5px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.82rem;font-weight:600;cursor:pointer;">👤 ?</span>
+    <a class="nav-link" href="Planning_Maison_Partage.html">🏠 Planning</a>
+    <a class="nav-link active" href="Agenda_Familial.html">📅 Agenda</a>
+    <a class="nav-link" href="Courses_Maison.html">🛒 Courses</a>
+    <a class="nav-link" href="Stats_Famille.html">📊 Stats</a>
+    <a class="nav-link" href="Notifications_Config.html">🔔 Notifs</a>
+    <span id="agUserBadge" onclick="switchProfile()" title="Changer de profil" class="nav-link" style="cursor:pointer;">👤 ?</span>
     <button class="btn-hdr" onclick="toggleDark()" id="darkBtn">🌙</button>
   </div>
 </header>
@@ -420,6 +430,7 @@ self.addEventListener('fetch',e=>{
   <div class="leg-item"><div class="leg-dot" style="background:#276749;border-radius:2px;"></div> Jardin</div>
   <div class="leg-item"><div class="leg-dot" style="background:#2b6cb0;border-radius:2px;"></div> Entretien</div>
   <div class="leg-item"><div class="leg-dot" style="background:#6b46c1;border-radius:2px;"></div> Admin</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#2c7a7b;border-radius:2px;"></div> Déplacement</div>
   <div class="leg-item"><div class="leg-dot" style="background:#718096;border-radius:2px;"></div> Autre</div>
 </div>
 
@@ -503,6 +514,7 @@ self.addEventListener('fetch',e=>{
       <option value="jardin">🌿 Jardin</option>
       <option value="entretien">🔧 Entretien</option>
       <option value="admin">📋 Admin</option>
+      <option value="deplacement">💼 Déplacement pro</option>
       <option value="autre">📌 Autre</option>
     </select>
 
@@ -603,19 +615,21 @@ function getPersonStyle(author) {
 }
 
 const TYPE_CLASS = {
-  sport:     'type-sport',
-  diner:     'type-diner',
-  sortie:    'type-sortie',
-  bricolage: 'type-bricolage',
-  jardin:    'type-jardin',
-  entretien: 'type-entretien',
-  admin:     'type-admin',
-  rdv:    'type-rdv',
-  autre:  'type-autre',
+  sport:       'type-sport',
+  diner:       'type-diner',
+  sortie:      'type-sortie',
+  bricolage:   'type-bricolage',
+  jardin:      'type-jardin',
+  entretien:   'type-entretien',
+  admin:       'type-admin',
+  rdv:         'type-rdv',
+  deplacement: 'type-deplacement',
+  autre:       'type-autre',
 };
 const TYPE_EMOJI = {
   sport:'🏃', diner:'🍽️', sortie:'🎉', rdv:'📅',
-  bricolage:'🔨', jardin:'🌿', entretien:'🔧', admin:'📋', autre:'📌'
+  bricolage:'🔨', jardin:'🌿', entretien:'🔧', admin:'📋',
+  deplacement:'💼', autre:'📌'
 };
 
 // ── Profil utilisateur — priorité : URL ?user=Bidule → localStorage ──
@@ -854,7 +868,7 @@ function buildMultiDayBanners(ds) {
   if (!multiEvts.length) return '';
   return multiEvts.map(e => {
     const isVacances = e.evType === 'vacances';
-    const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', vacances:'#276749', autre:'#718096' };
+    const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', vacances:'#276749', autre:'#718096' };
     const typeColor = typeColors[getEventType(e)] || '#718096';
     // Fond = couleur de la/les personne(s), bordure gauche = couleur du type
     const personS  = getPersonStyle(e.author);
@@ -919,7 +933,7 @@ function renderMobileList() {
 
   const today = toDateStr(new Date());
   const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', autre:'#718096' };
+  const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', autre:'#718096' };
 
   let html = '';
   for (let day = 1; day <= lastDay; day++) {
@@ -1013,7 +1027,7 @@ function renderWeekStrip() {
     const isToday = ds === toDateStr(today);
     const cls = isToday ? 'week-day today' : evts.length ? 'week-day has-event' : 'week-day';
     let evHtml = evts.slice(0, 3).map(e => {
-      const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', autre:'#718096' };
+      const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', autre:'#718096' };
       const typeColor = typeColors[getEventType(e)] || '#718096';
       const personS  = getPersonStyle(e.author);
       const chipBg   = personS.bg;
@@ -1091,7 +1105,7 @@ function buildCell(d, ds, otherMonth, isToday, evts) {
   const bannerHtml = buildMultiDayBanners(ds);
 
   let evHtml = evts.slice(0, 3).map(e => {
-    const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', autre:'#718096' };
+    const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', autre:'#718096' };
     const typeColor = typeColors[getEventType(e)] || '#718096';
     const personS  = getPersonStyle(e.author);
     const pillBg   = personS.bg;
@@ -1377,7 +1391,7 @@ function showRappelBanner() {
   const evtsTomorrow = eventsForDay(tomorrowStr);
   if (!evtsToday.length && !evtsTomorrow.length) return;
 
-  const TYPE_EMOJI_LOCAL = { sport:'🏃', diner:'🍽️', sortie:'🎉', rdv:'📅', bricolage:'🔨', jardin:'🌿', entretien:'🔧', admin:'📋', autre:'📌' };
+  const TYPE_EMOJI_LOCAL = { sport:'🏃', diner:'🍽️', sortie:'🎉', rdv:'📅', bricolage:'🔨', jardin:'🌿', entretien:'🔧', admin:'📋', deplacement:'💼', autre:'📌' };
   const fmt2 = (label, evts) => evts.map(e => {
     const em = TYPE_EMOJI_LOCAL[getEventType(e)] || '📌';
     const h  = e.time ? ` ${e.time}` : '';
@@ -1450,6 +1464,11 @@ const EV_SUGGESTIONS = {
     'Réunion parents-profs', 'Contrôle technique', 'Banque', 'Notaire',
     'Opticien', 'Pharmacie', 'Démarche administrative',
   ],
+  '💼 Déplacement pro': [
+    'Déplacement professionnel', 'Voyage d\'affaires', 'Formation pro',
+    'Conférence', 'Séminaire', 'Mission', 'Déplacement client',
+    'Salon professionnel', 'Télétravail délocalisé',
+  ],
   '📌 Autre': [
     'Courses', 'Bricolage', 'Jardinage', 'Ménage', 'Livraison',
     'Visite', 'Vacances', 'Week-end', 'Travail', 'Formation',
@@ -1513,6 +1532,7 @@ function pickEvSugg(el) {
     '🍽️ Dîner / Invitation': 'diner',
     '🎉 Sortie': 'sortie',
     '📅 Rendez-vous': 'rdv',
+    '💼 Déplacement pro': 'deplacement',
     '📌 Autre': 'autre',
   };
   // Trouver la catégorie de ce label

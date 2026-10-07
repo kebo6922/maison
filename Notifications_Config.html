@@ -14,9 +14,14 @@
   body.dark { --bg:#1a202c; --card:#2d3748; --txt:#e2e8f0; --txt2:#a0aec0; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--txt); min-height:100vh; }
-  header { background:var(--hdr); color:white; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; }
+  header { background:var(--hdr); color:white; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; position:sticky; top:0; z-index:200; box-shadow:0 2px 8px rgba(0,0,0,.2); }
   header h1 { font-size:1.1rem; font-weight:800; }
-  .nav-link { padding:6px 12px; border-radius:20px; border:2px solid rgba(255,255,255,.5); background:rgba(255,255,255,.15); color:white; font-size:.8rem; font-weight:600; text-decoration:none; }
+  .header-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .nav-link { padding:6px 12px; border-radius:20px; border:2px solid rgba(255,255,255,.5); background:rgba(255,255,255,.15); color:white; font-size:.8rem; font-weight:600; text-decoration:none; white-space:nowrap; transition:background .15s; }
+  .nav-link:hover { background:rgba(255,255,255,.28); }
+  .nav-link.active { background:rgba(255,255,255,.35); border-color:white; }
+  .btn-hdr { padding:6px 12px; border-radius:20px; border:2px solid rgba(255,255,255,.5); background:rgba(255,255,255,.15); color:white; font-size:.85rem; cursor:pointer; transition:background .15s; }
+  .btn-hdr:hover { background:rgba(255,255,255,.28); }
   .container { max-width:640px; margin:0 auto; padding:20px 16px; display:flex; flex-direction:column; gap:16px; }
   .card { background:var(--card); border-radius:14px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,.07); }
   .card-title { font-size:.9rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--txt2); margin-bottom:14px; }
@@ -63,11 +68,14 @@
 
 <header>
   <h1>🔔 Notifications</h1>
-  <div style="display:flex;gap:8px;align-items:center;">
-    <a class="nav-link" href="Agenda_Familial.html">📅 Agenda</a>
+  <div class="header-right">
     <a class="nav-link" href="Planning_Maison_Partage.html">🏠 Planning</a>
+    <a class="nav-link" href="Agenda_Familial.html">📅 Agenda</a>
     <a class="nav-link" href="Courses_Maison.html">🛒 Courses</a>
     <a class="nav-link" href="Stats_Famille.html">📊 Stats</a>
+    <a class="nav-link active" href="Notifications_Config.html">🔔 Notifs</a>
+    <span id="notifUserBadge" onclick="switchProfile()" title="Changer de profil" class="nav-link" style="cursor:pointer;">👤 ?</span>
+    <button class="btn-hdr" onclick="toggleDark()" id="darkBtn">🌙</button>
   </div>
 </header>
 
@@ -194,6 +202,17 @@ function checkOrSetupPin(name, cb) {
     localStorage.setItem(key, pin); cb();
   }
 }
+// ── Dark mode ─────────────────────────────────────────
+let darkMode = localStorage.getItem('pmDark') === '1';
+if (darkMode) { document.body.classList.add('dark'); }
+function toggleDark() {
+  darkMode = !darkMode;
+  document.body.classList.toggle('dark', darkMode);
+  localStorage.setItem('pmDark', darkMode ? '1' : '0');
+  document.getElementById('darkBtn').textContent = darkMode ? '☀️' : '🌙';
+}
+if (darkMode) { const b = document.getElementById('darkBtn'); if (b) b.textContent = '☀️'; }
+
 function switchProfile() {
   const c=prompt('1=Machin  2=Bidule  3=Bibi  0=Déconnexion'); if(c===null)return;
   if(c==='0'){currentUser=null;localStorage.removeItem('pmUser');renderProfile();return;}
