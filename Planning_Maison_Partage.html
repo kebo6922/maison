@@ -661,11 +661,17 @@ function updatePmUserBadge() {
 }
 updatePmUserBadge();
 
+function resolveMember(input) {
+  if (!input) return null;
+  const n = parseInt(input);
+  if (n >= 1 && n <= MEMBERS_LIST.length) return MEMBERS_LIST[n - 1];
+  return MEMBERS_LIST.find(m => m.toLowerCase() === input.trim().toLowerCase()) || null;
+}
+
 function switchProfile() {
-  const name = prompt('Qui êtes-vous ?\n' + MEMBERS_LIST.map((m,i) => `${i+1}. ${m}`).join('\n') + '\n\nTapez le nom :');
-  if (!name) return;
-  const match = MEMBERS_LIST.find(m => m.toLowerCase() === name.toLowerCase());
-  if (!match) { alert('Membre inconnu.'); return; }
+  const input = prompt('Qui êtes-vous ?\n\n' + MEMBERS_LIST.map((m,i) => `${i+1}. ${m}`).join('\n'));
+  const match = resolveMember(input);
+  if (!match) { if (input) alert('Choix invalide.'); return; }
   if (match === currentUser) { alert('Vous êtes déjà connecté en tant que ' + currentUser); return; }
   checkOrSetupPin(match, function() {
     localStorage.setItem('pmUser', match);
@@ -677,9 +683,8 @@ function switchProfile() {
 
 if (!currentUser) {
   setTimeout(function() {
-    const name = prompt('Bienvenue ! Qui êtes-vous ?\n' + MEMBERS_LIST.map((m,i) => `${i+1}. ${m}`).join('\n') + '\n\nTapez le nom :');
-    if (!name) return;
-    const match = MEMBERS_LIST.find(m => m.toLowerCase() === name.toLowerCase());
+    const input = prompt('Bienvenue ! Qui êtes-vous ?\n\n' + MEMBERS_LIST.map((m,i) => `${i+1}. ${m}`).join('\n'));
+    const match = resolveMember(input);
     if (!match) return;
     checkOrSetupPin(match, function() {
       localStorage.setItem('pmUser', match);
