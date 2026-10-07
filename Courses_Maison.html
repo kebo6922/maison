@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Liste de Courses</title>
+<!-- PWA -->
+<meta name="theme-color" content="#2d3748">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Courses">
+<script>
+(function(){
+  const MOT_DE_PASSE = 'Maison05';
+  const CLE = 'maison_auth';
+  if (localStorage.getItem(CLE) !== MOT_DE_PASSE) {
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f0f4f8;font-family:sans-serif;">
+          <div style="background:white;padding:40px;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.12);text-align:center;max-width:320px;width:90%;">
+            <div style="font-size:2.5rem;margin-bottom:12px;">🛒</div>
+            <h2 style="margin:0 0 8px;color:#2d3748;">Liste de Courses</h2>
+            <p style="color:#718096;font-size:0.9rem;margin-bottom:24px;">Entrez le mot de passe pour accéder</p>
+            <input id="mdp" type="password" placeholder="Mot de passe" autofocus
+              style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;box-sizing:border-box;outline:none;margin-bottom:12px;"
+              onkeydown="if(event.key==='Enter')verif()">
+            <div id="err" style="color:#e53e3e;font-size:0.85rem;min-height:20px;margin-bottom:8px;"></div>
+            <button onclick="verif()" style="width:100%;padding:12px;background:#667eea;color:white;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;">Entrer</button>
+          </div>
+        </div>`;
+      window.verif = function() {
+        const val = document.getElementById('mdp').value;
+        if (val === MOT_DE_PASSE) {
+          localStorage.setItem(CLE, MOT_DE_PASSE);
+          location.reload();
+        } else {
+          document.getElementById('err').textContent = 'Mot de passe incorrect';
+        }
+      };
+    });
+  }
+})();
+</script>
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getDatabase, ref, onValue, push, set, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyB2YnkiivjhxOmmAfS9JtvRRWwB3dsF86U",
+    authDomain:        "planning-maison-7eace.firebaseapp.com",
+    databaseURL:       "https://planning-maison-7eace-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:         "planning-maison-7eace",
+    storageBucket:     "planning-maison-7eace.firebasestorage.app",
+    messagingSenderId: "365827317336",
+    appId:             "1:365827317336:web:27412c4c05d67a7a81342d"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  const coursesRef = ref(db, 'maison/courses');
+
+  const PERSON_COLORS = {
+    Machin: { bg:'#bee3f8', text:'#1a365d', border:'#90cdf4' },
+    Bidule: { bg:'#fc8181', text:'#742a2a', border:'#e53e3e' },
+    Bibi:   { bg:'#c6f6d5', text:'#1a4731', border:'#68d391' }
+  };
+  const MEMBERS_LIST = ['Machin','Bidule','Bibi'];
+  const CATEGORIES = ['🥦 Légumes','🍖 Viande/Poisson','🧀 Crèmerie','🥐 Boulangerie','🥫 Épicerie','🧴 Hygiène','🍷 Boissons','❄️ Surgelés','🧹 Entretien','🛒 Autre'];
+
+  let currentUser = localStorage.getItem('pmUser') || '';
+  let items = {};
+
+  function getPinKey(n){ return 'pmPin_'+n; }
+  function checkOrSetupPin(name, onSuccess){
+    const stored = localStorage.getItem(getPinKey(name));
+    if(!stored){
+      const pin1 = prompt(`Première connexion de ${name} 🎉\nChoisissez votre code PIN (4 chiffres) :`);
+      if(!pin1||!/^\d{4}$/.test(pin1)){alert('PIN invalide — 4 chiffres requis.');return;}
+      const pin2 = prompt('Confirmez votre PIN :');
+      if(pin1!==pin2){alert('Les PINs ne correspondent pas.');return;}
+      localStorage.setItem(getPinKey(name),pin1);
+      onSuccess();
+    } else {
+      const entered = prompt(`🔒 Connexion de ${name}\nEntrez votre PIN :`);
+      if(entered===stored){onSuccess();}else{alert('PIN incorrect.');}
+    }
+  }
+  function resolveMember(input){
+    if(!input)return null;
+    const n=parseInt(input);
+    if(n>=1&&n<=MEMBERS_LIST.length)return MEMBERS_LIST[n-1];
+    return MEMBERS_LIST.find(m=>m.toLowerCase()===input.trim().toLowerCase())||null;
+  }
+  function switchProfile(){
+    const input=prompt('Qui êtes-vous ?\n\n'+MEMBERS_LIST.map((m,i)=>`${i+1}. ${m}`).join('\n'));
+    const match=resolveMember(input);
+    if(!match){if(input)alert('Choix invalide.');return;}
+    if(match===currentUser){alert('Vous êtes déjà connecté en tant que '+currentUser);return;}
+    checkOrSetupPin(match,function(){
+      localStorage.setItem('pmUser',match);
+      currentUser=match;
+      updateBadge();
+      render();
+    });
+  }
+  window.switchProfile = switchProfile;
+
+  function updateBadge(){
+    const badge = document.getElementById('coursesUserBadge');
+    if(!badge) return;
+    const c = PERSON_COLORS[currentUser];
+    if(c){
+      badge.style.background = c.bg;
+      badge.style.color = c.text;
+      badge.style.border = `2px solid ${c.border}`;
+      badge.textContent = '👤 '+currentUser;
+    } else {
+      badge.style.background='rgba(255,255,255,0.15)';
+      badge.style.color='white';
+      badge.style.border='2px solid rgba(255,255,255,0.5)';
+      badge.textContent='👤 ?';
+    }
+  }
+
+  function render(){
+    updateBadge();
+    const list = document.getElementById('itemList');
+    if(!list) return;
+
+    // Grouper par catégorie
+    const byCategory = {};
+    CATEGORIES.forEach(c=>{ byCategory[c]=[]; });
+    byCategory['🛒 Autre'] = byCategory['🛒 Autre']||[];
+
+    Object.entries(items).forEach(([id,item])=>{
+      const cat = item.category || '🛒 Autre';
+      if(!byCategory[cat]) byCategory[cat]=[];
+      byCategory[cat].push({id,...item});
+    });
+
+    // Compter total non cochés
+    const total = Object.values(items).filter(i=>!i.done).length;
+    const done = Object.values(items).filter(i=>i.done).length;
+    document.getElementById('countBadge').textContent = total > 0 ? `${total} restant${total>1?'s':''}` : done > 0 ? '✅ Tout acheté !' : '';
+
+    let html = '';
+    CATEGORIES.forEach(cat=>{
+      const catItems = byCategory[cat];
+      if(catItems.length===0) return;
+      const notDone = catItems.filter(i=>!i.done);
+      const doneItems = catItems.filter(i=>i.done);
+      html += `<div class="category-group">
+        <div class="cat-header">${cat} <span class="cat-count">${notDone.length}/${catItems.length}</span></div>`;
+      [...notDone, ...doneItems].forEach(item=>{
+        const pc = PERSON_COLORS[item.addedBy]||{bg:'#e2e8f0',text:'#4a5568',border:'#cbd5e0'};
+        const doneClass = item.done ? ' done' : '';
+        html += `<div class="item-row${doneClass}" data-id="${item.id}">
+          <input type="checkbox" class="item-check" ${item.done?'checked':''} onchange="toggleItem('${item.id}',this.checked)">
+          <div class="item-body">
+            <span class="item-name">${escHtml(item.name)}</span>
+            ${item.qty ? `<span class="item-qty">${escHtml(item.qty)}</span>` : ''}
+          </div>
+          <span class="item-author" style="background:${pc.bg};color:${pc.text};border:1px solid ${pc.border};">${item.addedBy||'?'}</span>
+          ${currentUser===item.addedBy||!item.addedBy ? `<button class="del-btn" onclick="deleteItem('${item.id}')" title="Supprimer">🗑</button>` : ''}
+        </div>`;
+      });
+      html += `</div>`;
+    });
+
+    if(html===''){
+      html = `<div class="empty-state">🛒<br>La liste est vide !<br><span>Ajoutez vos premiers articles</span></div>`;
+    }
+    list.innerHTML = html;
+
+    // Bouton vider cochés
+    const hasDone = Object.values(items).some(i=>i.done);
+    document.getElementById('clearDoneBtn').style.display = hasDone ? 'inline-flex' : 'none';
+  }
+
+  function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  window.toggleItem = function(id, checked){
+    update(ref(db,'maison/courses/'+id),{done:checked, doneAt: checked ? Date.now() : null, doneBy: checked ? currentUser : null});
+  };
+  window.deleteItem = function(id){
+    remove(ref(db,'maison/courses/'+id));
+  };
+  window.clearDone = function(){
+    Object.entries(items).forEach(([id,item])=>{ if(item.done) remove(ref(db,'maison/courses/'+id)); });
+  };
+
+  function addItem(){
+    const nameEl = document.getElementById('newItemName');
+    const qtyEl  = document.getElementById('newItemQty');
+    const catEl  = document.getElementById('newItemCat');
+    const name = nameEl.value.trim();
+    if(!name) return;
+    if(!currentUser){ alert('Connectez-vous d\'abord (cliquez sur 👤)'); return; }
+    push(coursesRef,{
+      name, qty: qtyEl.value.trim(), category: catEl.value,
+      addedBy: currentUser, addedAt: Date.now(), done: false
+    });
+    nameEl.value=''; qtyEl.value='';
+    nameEl.focus();
+  }
+  window.addItem = addItem;
+
+  // Écoute Firebase temps réel
+  onValue(coursesRef, snap=>{
+    items = snap.val()||{};
+    render();
+  });
+
+  // Init au chargement
+  document.addEventListener('DOMContentLoaded',()=>{
+    updateBadge();
+    const nameEl = document.getElementById('newItemName');
+    if(nameEl) nameEl.addEventListener('keydown', e=>{ if(e.key==='Enter') addItem(); });
+
+    if(!currentUser){
+      setTimeout(()=>{
+        const input=prompt('Qui êtes-vous ?\n\n'+MEMBERS_LIST.map((m,i)=>`${i+1}. ${m}`).join('\n'));
+        const match=resolveMember(input);
+        if(match){
+          checkOrSetupPin(match,function(){
+            localStorage.setItem('pmUser',match);
+            currentUser=match;
+            updateBadge();
+          });
+        }
+      },500);
+    }
+  });
+</script>
+<style>
+:root {
+  --bg: #f0f4f8;
+  --surface: #ffffff;
+  --header: #2d3748;
+  --fg: #2d3748;
+  --fg2: #718096;
+  --border: #e2e8f0;
+  --accent: #667eea;
+  --cat-bg: #edf2f7;
+  --done-opacity: 0.45;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a202c; --surface: #2d3748; --header: #1a202c;
+    --fg: #e2e8f0; --fg2: #a0aec0; --border: #4a5568;
+    --cat-bg: #374151; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a202c; --surface: #2d3748; --header: #1a202c;
+  --fg: #e2e8f0; --fg2: #a0aec0; --border: #4a5568;
+  --cat-bg: #374151; color-scheme: dark;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--fg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; padding-bottom: env(safe-area-inset-bottom,0); }
+
+/* HEADER */
+.app-header {
+  background: var(--header);
+  color: white;
+  padding: 14px 16px;
+  padding-top: calc(14px + env(safe-area-inset-top,0));
+  display: flex; align-items: center; gap: 10px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+.app-header .logo { font-size: 1.4rem; }
+.app-header h1 { font-size: 1rem; font-weight: 700; flex: 1; }
+.count-badge { font-size: .75rem; background: rgba(255,255,255,.15); padding: 3px 10px; border-radius: 20px; }
+
+/* NAV */
+.nav-pills {
+  background: var(--header);
+  display: flex; gap: 6px; padding: 0 16px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.nav-pills a {
+  color: rgba(255,255,255,.65); font-size: .8rem; text-decoration: none;
+  padding: 4px 12px; border-radius: 20px;
+  transition: all .15s;
+}
+.nav-pills a:hover, .nav-pills a.active { color: white; background: rgba(255,255,255,.2); }
+
+.badge-row { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
+#coursesUserBadge { padding: 5px 14px; border-radius: 20px; font-size: .82rem; font-weight: 600; cursor: pointer; background: rgba(255,255,255,.15); color: var(--fg2); border: 2px solid var(--border); }
+#clearDoneBtn { display: none; align-items: center; gap: 5px; background: #e53e3e; color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: .8rem; cursor: pointer; font-weight: 600; }
+
+/* FORM AJOUT */
+.add-form {
+  background: var(--surface);
+  border-radius: var(--radius);
+  margin: 0 12px 12px;
+  padding: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+.add-form input, .add-form select {
+  border: 1.5px solid var(--border); border-radius: 8px;
+  padding: 9px 12px; font-size: .9rem; background: var(--bg); color: var(--fg);
+  outline: none;
+}
+.add-form input:focus, .add-form select:focus { border-color: var(--accent); }
+#newItemName { flex: 2; min-width: 120px; }
+#newItemQty  { flex: 0.7; min-width: 70px; }
+#newItemCat  { flex: 1.5; min-width: 130px; }
+.add-btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 9px 18px; font-size: .95rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.add-btn:active { opacity: .8; }
+
+/* LISTE */
+#itemList { padding: 0 12px 80px; }
+.category-group { margin-bottom: 10px; }
+.cat-header { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--fg2); padding: 6px 4px 4px; display: flex; align-items: center; gap: 8px; }
+.cat-count { font-size: .7rem; background: var(--cat-bg); color: var(--fg2); padding: 1px 7px; border-radius: 10px; }
+
+.item-row {
+  background: var(--surface); border-radius: var(--radius);
+  padding: 10px 12px; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  transition: opacity .2s;
+}
+.item-row.done { opacity: var(--done-opacity); }
+.item-row.done .item-name { text-decoration: line-through; }
+.item-check { width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
+.item-body { flex: 1; min-width: 0; }
+.item-name { font-size: .95rem; font-weight: 500; display: block; }
+.item-qty { font-size: .78rem; color: var(--fg2); margin-top: 1px; display: block; }
+.item-author { font-size: .7rem; font-weight: 600; padding: 2px 8px; border-radius: 12px; white-space: nowrap; flex-shrink: 0; }
+.del-btn { background: none; border: none; cursor: pointer; font-size: 1rem; opacity: .5; padding: 4px; flex-shrink: 0; }
+.del-btn:hover { opacity: 1; }
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--fg2); font-size: 1.1rem; line-height: 2; }
+.empty-state span { font-size: .9rem; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <span class="logo">🛒</span>
+  <h1>Liste de Courses</h1>
+  <span class="count-badge" id="countBadge"></span>
+</div>
+<div class="nav-pills">
+  <a href="Planning_Maison_Partage.html">🏠 Planning</a>
+  <a href="Agenda_Familial.html">📅 Agenda</a>
+  <a href="Courses_Maison.html" class="active">🛒 Courses</a>
+  <a href="Stats_Famille.html">📊 Stats</a>
+  <a href="Notifications_Config.html">🔔 Notifs</a>
+</div>
+
+<div class="badge-row">
+  <span id="coursesUserBadge" onclick="switchProfile()" title="Changer de profil">👤 ?</span>
+  <button id="clearDoneBtn" onclick="clearDone()">🗑 Vider les cochés</button>
+</div>
+
+<div class="add-form">
+  <input type="text" id="newItemName" placeholder="Article à ajouter…" autocomplete="off">
+  <input type="text" id="newItemQty"  placeholder="Qté (ex: 2L)">
+  <select id="newItemCat">
+    <option value="🛒 Autre">🛒 Autre</option>
+    <option value="🥦 Légumes">🥦 Légumes</option>
+    <option value="🍖 Viande/Poisson">🍖 Viande/Poisson</option>
+    <option value="🧀 Crèmerie">🧀 Crèmerie</option>
+    <option value="🥐 Boulangerie">🥐 Boulangerie</option>
+    <option value="🥫 Épicerie">🥫 Épicerie</option>
+    <option value="🧴 Hygiène">🧴 Hygiène</option>
+    <option value="🍷 Boissons">🍷 Boissons</option>
+    <option value="❄️ Surgelés">❄️ Surgelés</option>
+    <option value="🧹 Entretien">🧹 Entretien</option>
+  </select>
+  <button class="add-btn" onclick="addItem()">+ Ajouter</button>
+</div>
+
+<div id="itemList"></div>
+
+</body>
+</html>

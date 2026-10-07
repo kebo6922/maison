@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Notifications – Maison Famille</title>
+<style>
+  :root {
+    --bg:#f0f4f8; --card:#fff; --txt:#2d3748; --txt2:#718096;
+    --hdr:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+    --green:#276749; --green-bg:#c6f6d5; --red:#c53030; --red-bg:#fed7d7;
+    --blue:#2b6cb0; --blue-bg:#bee3f8;
+  }
+  body.dark { --bg:#1a202c; --card:#2d3748; --txt:#e2e8f0; --txt2:#a0aec0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--txt); min-height:100vh; }
+  header { background:var(--hdr); color:white; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; }
+  header h1 { font-size:1.1rem; font-weight:800; }
+  .nav-link { padding:6px 12px; border-radius:20px; border:2px solid rgba(255,255,255,.5); background:rgba(255,255,255,.15); color:white; font-size:.8rem; font-weight:600; text-decoration:none; }
+  .container { max-width:640px; margin:0 auto; padding:20px 16px; display:flex; flex-direction:column; gap:16px; }
+  .card { background:var(--card); border-radius:14px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,.07); }
+  .card-title { font-size:.9rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--txt2); margin-bottom:14px; }
+  .status-row { display:flex; align-items:center; gap:12px; padding:12px; border-radius:10px; margin-bottom:12px; }
+  .status-row.ok  { background:var(--green-bg); }
+  .status-row.err { background:var(--red-bg); }
+  .status-row.info { background:var(--blue-bg); }
+  .status-icon { font-size:1.4rem; flex-shrink:0; }
+  .status-text { font-size:.88rem; font-weight:600; }
+  .status-text small { display:block; font-weight:400; font-size:.78rem; opacity:.8; }
+  .btn { display:inline-block; padding:10px 20px; border-radius:10px; border:none; cursor:pointer; font-size:.9rem; font-weight:700; transition:all .2s; }
+  .btn-primary { background:var(--hdr); color:white; }
+  .btn-danger  { background:var(--red-bg); color:var(--red); border:1.5px solid var(--red); }
+  .btn-secondary { background:var(--blue-bg); color:var(--blue); border:1.5px solid var(--blue); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .person-toggles { display:flex; flex-direction:column; gap:10px; }
+  .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:10px; border:1.5px solid #e2e8f0; }
+  .toggle-label { font-size:.9rem; font-weight:600; }
+  .toggle { position:relative; width:44px; height:24px; flex-shrink:0; }
+  .toggle input { opacity:0; width:0; height:0; }
+  .slider { position:absolute; inset:0; border-radius:24px; background:#cbd5e0; cursor:pointer; transition:.3s; }
+  .slider:before { content:''; position:absolute; width:18px; height:18px; border-radius:50%; background:white; left:3px; bottom:3px; transition:.3s; }
+  input:checked + .slider { background:#667eea; }
+  input:checked + .slider:before { transform:translateX(20px); }
+  .token-box { font-family:monospace; font-size:.72rem; word-break:break-all; background:#f7fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; color:#4a5568; max-height:80px; overflow-y:auto; margin-top:8px; }
+  .divider { height:1px; background:#e2e8f0; margin:8px 0; }
+  #log { font-family:monospace; font-size:.78rem; color:var(--txt2); }
+  .log-line { padding:2px 0; border-bottom:1px dotted rgba(0,0,0,.06); }
+  .log-ok   { color:var(--green); }
+  .log-err  { color:var(--red); }
+  .log-info { color:var(--blue); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🔔 Notifications push</h1>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <a class="nav-link" href="Agenda_Familial.html">📅 Agenda</a>
+    <a class="nav-link" href="Planning_Maison_Partage.html">🏠 Planning</a>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Statut global -->
+  <div class="card">
+    <div class="card-title">État des notifications</div>
+    <div id="permStatus" class="status-row info">
+      <div class="status-icon">⏳</div>
+      <div class="status-text">Vérification en cours…<small> </small></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-primary" id="btnEnable" onclick="enableNotifications()">🔔 Activer les notifications</button>
+      <button class="btn btn-danger"  id="btnDisable" onclick="disableNotifications()" style="display:none;">🔕 Désactiver</button>
+    </div>
+  </div>
+
+  <!-- Profil actif -->
+  <div class="card">
+    <div class="card-title">Mon profil</div>
+    <div id="profileInfo" style="font-size:.9rem;color:var(--txt2);">Chargement…</div>
+    <div style="margin-top:12px;">
+      <button class="btn btn-secondary" onclick="switchProfile()">👤 Changer de profil</button>
+    </div>
+  </div>
+
+  <!-- Quand recevoir des notifs -->
+  <div class="card">
+    <div class="card-title">Recevoir des notifications pour…</div>
+    <div class="person-toggles">
+      <div class="toggle-row">
+        <span class="toggle-label" style="color:#1a365d;">🔵 Événements de Machin</span>
+        <label class="toggle"><input type="checkbox" id="notif_Machin" onchange="saveNotifPrefs()"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label" style="color:#742a2a;">🔴 Événements de Bidule</span>
+        <label class="toggle"><input type="checkbox" id="notif_Bidule" onchange="saveNotifPrefs()"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label" style="color:#1a4731;">🟢 Événements de Bibi</span>
+        <label class="toggle"><input type="checkbox" id="notif_Bibi" onchange="saveNotifPrefs()"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">📝 Nouveaux commentaires</span>
+        <label class="toggle"><input type="checkbox" id="notif_comments" onchange="saveNotifPrefs()" checked><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">🛒 Courses ajoutées</span>
+        <label class="toggle"><input type="checkbox" id="notif_courses" onchange="saveNotifPrefs()"><span class="slider"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tester -->
+  <div class="card">
+    <div class="card-title">Test</div>
+    <p style="font-size:.85rem;color:var(--txt2);margin-bottom:12px;">Envoie une notification de test sur cet appareil pour vérifier que tout fonctionne.</p>
+    <button class="btn btn-secondary" onclick="testNotification()">📩 Envoyer une notification test</button>
+  </div>
+
+  <!-- Token debug -->
+  <div class="card">
+    <div class="card-title">Token appareil (debug)</div>
+    <div id="tokenDisplay" class="token-box">—</div>
+    <div id="log" style="margin-top:12px;"></div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     Auth + profil (identique aux autres pages)
+════════════════════════════════════════════════════════ -->
+<script>
+const AUTH_KEY = 'maison_auth';
+const AUTH_PWD = 'Maison05';
+if (localStorage.getItem(AUTH_KEY) !== AUTH_PWD) {
+  const pwd = prompt('Mot de passe Maison :');
+  if (pwd !== AUTH_PWD) { document.body.innerHTML='<div style="text-align:center;padding:60px;color:#c53030;">❌ Accès refusé</div>'; throw new Error('auth'); }
+  localStorage.setItem(AUTH_KEY, AUTH_PWD);
+}
+
+const MEMBERS_LIST = ['Machin','Bidule','Bibi'];
+let currentUser = null;
+
+function loadProfile() {
+  try { const p = JSON.parse(localStorage.getItem('pmUser')||'null'); if (p && p.name) currentUser = p.name; } catch(e) {}
+  updateProfileInfo();
+}
+function updateProfileInfo() {
+  const el = document.getElementById('profileInfo');
+  if (!el) return;
+  const colors = { Machin:'#bee3f8', Bidule:'#fc8181', Bibi:'#c6f6d5' };
+  const texts  = { Machin:'#1a365d', Bidule:'#742a2a', Bibi:'#1a4731' };
+  if (currentUser) {
+    el.innerHTML = `<span style="display:inline-block;padding:4px 14px;border-radius:20px;background:${colors[currentUser]||'#e2e8f0'};color:${texts[currentUser]||'#2d3748'};font-weight:700;font-size:.95rem;">👤 ${currentUser}</span>`;
+  } else {
+    el.innerHTML = '<span style="color:#c53030;font-weight:600;">⚠ Aucun profil — choisissez un profil pour lier les notifications à votre compte</span>';
+  }
+}
+function checkOrSetupPin(name, onSuccess) {
+  const key = 'pmPin_'+name;
+  const stored = localStorage.getItem(key);
+  if (stored) {
+    const entered = prompt('PIN pour '+name+' :');
+    if (!entered) return;
+    if (entered === stored) { onSuccess(); } else { alert('PIN incorrect'); }
+  } else {
+    const pin = prompt('Créer un PIN (4 chiffres) pour '+name+' :');
+    if (!pin || !/^\d{4}$/.test(pin)) { alert('PIN invalide'); return; }
+    const confirm2 = prompt('Confirmez le PIN :');
+    if (pin !== confirm2) { alert('PINs différents'); return; }
+    localStorage.setItem(key, pin);
+    onSuccess();
+  }
+}
+function switchProfile() {
+  const choice = prompt('Choisissez :\n1 = Machin\n2 = Bidule\n3 = Bibi\n0 = Déconnexion');
+  if (choice === null) return;
+  if (choice === '0') { currentUser = null; localStorage.removeItem('pmUser'); updateProfileInfo(); return; }
+  const map = {'1':'Machin','2':'Bidule','3':'Bibi'};
+  const name = map[choice] || MEMBERS_LIST.find(m => m.toLowerCase() === choice.toLowerCase());
+  if (!name) { alert('Choix invalide'); return; }
+  checkOrSetupPin(name, () => {
+    currentUser = name;
+    localStorage.setItem('pmUser', JSON.stringify({name}));
+    updateProfileInfo();
+    log(`Profil changé : ${name}`, 'ok');
+  });
+}
+loadProfile();
+
+// Log console dans la page
+function log(msg, type='info') {
+  const el = document.getElementById('log');
+  if (!el) return;
+  const d = document.createElement('div');
+  d.className = 'log-line log-'+type;
+  d.textContent = `[${new Date().toLocaleTimeString('fr-FR')}] ${msg}`;
+  el.prepend(d);
+  if (el.children.length > 20) el.lastChild.remove();
+}
+
+// ── Préférences notifications ──
+function saveNotifPrefs() {
+  const prefs = {};
+  ['Machin','Bidule','Bibi','comments','courses'].forEach(k => {
+    const el = document.getElementById('notif_'+k);
+    if (el) prefs[k] = el.checked;
+  });
+  localStorage.setItem('notif_prefs', JSON.stringify(prefs));
+  log('Préférences sauvegardées', 'ok');
+}
+function loadNotifPrefs() {
+  try {
+    const prefs = JSON.parse(localStorage.getItem('notif_prefs')||'{}');
+    ['Machin','Bidule','Bibi','comments','courses'].forEach(k => {
+      const el = document.getElementById('notif_'+k);
+      if (el && prefs[k] !== undefined) el.checked = prefs[k];
+    });
+  } catch(e) {}
+}
+loadNotifPrefs();
+</script>
+
+<!-- ════════════════════════════════════════════════════════
+     FIREBASE MESSAGING (FCM)
+════════════════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import { getMessaging, getToken, deleteToken, onMessage }
+  from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyB2YnkiivjhxOmmAfS9JtvRRWwB3dsF86U",
+  authDomain:        "planning-maison-7eace.firebaseapp.com",
+  databaseURL:       "https://planning-maison-7eace-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "planning-maison-7eace",
+  storageBucket:     "planning-maison-7eace.firebasestorage.app",
+  messagingSenderId: "365827317336",
+  appId:             "1:365827317336:web:27412c4c05d67a7a81342d"
+};
+
+// VAPID public key (à remplacer par la vraie clé dans Firebase Console > Cloud Messaging)
+// Firebase Console → Paramètres projet → Cloud Messaging → Web Push certificates → Generate key pair
+const VAPID_KEY = 'YOUR_VAPID_KEY_HERE'; // ← À remplacer
+
+const app       = initializeApp(firebaseConfig);
+const db        = getDatabase(app);
+const messaging = getMessaging(app);
+
+// ── Enregistrement service worker FCM ────────────────────
+async function registerFcmSW() {
+  if (!('serviceWorker' in navigator)) return null;
+  try {
+    // SW minimal compatible FCM (scope /maison/)
+    const swCode = `
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
+firebase.initializeApp(${JSON.stringify(firebaseConfig)});
+const messaging = firebase.messaging();
+messaging.onBackgroundMessage(payload => {
+  const { title, body, icon } = payload.notification || {};
+  self.registration.showNotification(title || 'Maison Famille', {
+    body: body || '',
+    icon: icon || '/maison/icon-192.png',
+    badge: '/maison/icon-192.png',
+    tag: payload.collapseKey || 'maison-notif',
+    data: payload.data || {}
+  });
+});`;
+    const blob = new Blob([swCode], {type:'text/javascript'});
+    const url  = URL.createObjectURL(blob);
+    const reg  = await navigator.serviceWorker.register(url, {scope:'/maison/'});
+    await navigator.serviceWorker.ready;
+    return reg;
+  } catch(err) {
+    window.log && window.log('SW FCM erreur: '+err.message, 'err');
+    return null;
+  }
+}
+
+// ── Activation des notifications ──────────────────────────
+window.enableNotifications = async function() {
+  window.log('Demande de permission…', 'info');
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') {
+    updatePermUI('denied');
+    window.log('Permission refusée', 'err');
+    return;
+  }
+  window.log('Permission accordée ✓', 'ok');
+  try {
+    const sw = await registerFcmSW();
+    if (!sw) throw new Error('Service worker non disponible');
+
+    if (VAPID_KEY === 'YOUR_VAPID_KEY_HERE') {
+      window.log('⚠ VAPID key non configurée — voir instructions', 'err');
+      updatePermUI('no-vapid');
+      return;
+    }
+
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: sw });
+    if (!token) throw new Error('Token vide');
+
+    // Stocker le token en Firebase sous l'utilisateur
+    const user = window.currentUser || 'inconnu';
+    const deviceId = getDeviceId();
+    await set(ref(db, `maison/fcm_tokens/${user}/${deviceId}`), {
+      token, user, deviceId,
+      updatedAt: Date.now(),
+      userAgent: navigator.userAgent.slice(0,80)
+    });
+
+    localStorage.setItem('fcm_token', token);
+    localStorage.setItem('notif_enabled', '1');
+    document.getElementById('tokenDisplay').textContent = token;
+    window.log(`Token enregistré pour ${user}`, 'ok');
+    updatePermUI('granted');
+
+    // Écouter les messages en foreground
+    onMessage(messaging, payload => {
+      window.log('Message reçu : '+JSON.stringify(payload.notification), 'info');
+      const { title, body } = payload.notification || {};
+      new Notification(title||'Maison', { body: body||'', icon: 'data:,' });
+    });
+  } catch(err) {
+    window.log('Erreur FCM: '+err.message, 'err');
+    updatePermUI('error');
+  }
+};
+
+window.disableNotifications = async function() {
+  try {
+    await deleteToken(messaging);
+    const user = window.currentUser || 'inconnu';
+    const deviceId = getDeviceId();
+    await set(ref(db, `maison/fcm_tokens/${user}/${deviceId}`), null);
+    localStorage.removeItem('fcm_token');
+    localStorage.setItem('notif_enabled', '0');
+    updatePermUI('default');
+    window.log('Notifications désactivées', 'ok');
+  } catch(err) {
+    window.log('Erreur désactivation: '+err.message, 'err');
+  }
+};
+
+window.testNotification = function() {
+  if (Notification.permission !== 'granted') {
+    alert('Activez d\'abord les notifications ci-dessus.');
+    return;
+  }
+  new Notification('🏠 Maison Famille – test', {
+    body: 'Les notifications fonctionnent correctement ! 🎉',
+    icon: 'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏠</text></svg>'
+  });
+  window.log('Notification test envoyée', 'ok');
+};
+
+function getDeviceId() {
+  let id = localStorage.getItem('fcm_device_id');
+  if (!id) { id = 'dev_'+Math.random().toString(36).slice(2,10); localStorage.setItem('fcm_device_id', id); }
+  return id;
+}
+
+function updatePermUI(state) {
+  const row = document.getElementById('permStatus');
+  const btn = document.getElementById('btnEnable');
+  const dis  = document.getElementById('btnDisable');
+  const msgs = {
+    granted:   { cls:'ok',   icon:'✅', text:'Notifications activées', sub:'Vous recevrez les alertes sur cet appareil.' },
+    denied:    { cls:'err',  icon:'🚫', text:'Permission refusée', sub:'Allez dans les paramètres de votre navigateur pour autoriser les notifications.' },
+    default:   { cls:'info', icon:'🔔', text:'Notifications désactivées', sub:'Cliquez sur "Activer" pour recevoir les alertes.' },
+    error:     { cls:'err',  icon:'⚠️', text:'Erreur d\'activation', sub:'Vérifiez la console et la configuration VAPID.' },
+    'no-vapid':{ cls:'err',  icon:'🔧', text:'Configuration VAPID manquante', sub:'Générez une clé VAPID dans Firebase Console → Cloud Messaging et remplacez YOUR_VAPID_KEY_HERE dans ce fichier.' },
+  };
+  const m = msgs[state] || msgs.default;
+  row.className = 'status-row '+m.cls;
+  row.innerHTML = `<div class="status-icon">${m.icon}</div><div class="status-text">${m.text}<small>${m.sub}</small></div>`;
+  btn.style.display = (state === 'granted') ? 'none' : '';
+  dis.style.display = (state === 'granted') ? '' : 'none';
+}
+
+// Init : vérifier l'état actuel
+(async function init() {
+  if (!('Notification' in window)) { updatePermUI('denied'); return; }
+  const enabled = localStorage.getItem('notif_enabled') === '1';
+  const perm = Notification.permission;
+  if (perm === 'granted' && enabled) {
+    updatePermUI('granted');
+    const tok = localStorage.getItem('fcm_token');
+    if (tok) document.getElementById('tokenDisplay').textContent = tok;
+  } else if (perm === 'denied') {
+    updatePermUI('denied');
+  } else {
+    updatePermUI('default');
+  }
+})();
+</script>
+</body>
+</html>

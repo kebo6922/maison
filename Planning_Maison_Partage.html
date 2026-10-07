@@ -90,6 +90,10 @@
   window.fbDelete = async (id) => {
     await remove(ref(db, `planning/tasks/${id}`));
   };
+  // Commentaires
+  window._pmFbCommentsRef  = (eventId) => ref(db, `maison/comments/${eventId}`);
+  window._pmFbOnValue      = onValue;
+  window._pmFbCommentsPush = (eventId, data) => push(ref(db, `maison/comments/${eventId}`), data);
 </script>
 
 <!-- EmailJS pour les alertes mail -->
@@ -224,6 +228,7 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
 .badge-cat-sport      { background: #c6f6d5; color: #1a4731; }
 .badge-cat-diner      { background: #feebc8; color: #7b341e; }
 .badge-cat-sortie     { background: #e9d8fd; color: #44337a; }
+.badge-cat-deplacement { background: #e2e8f0; color: #2d3748; }
 .badge-prio-haute     { background: #fed7d7; color: #9b2c2c; }
 .badge-prio-moyenne   { background: #fefcbf; color: #744210; }
 .badge-prio-basse     { background: #e2e8f0; color: #4a5568; }
@@ -322,6 +327,49 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
   margin: 2px 4px;
 }
 </style>
+<!-- PWA -->
+<meta name="theme-color" content="#2d3748">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Maison">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIiB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiI+CiAgPHJlY3Qgd2lkdGg9IjE5MiIgaGVpZ2h0PSIxOTIiIHJ4PSI0MCIgZmlsbD0iIzFhMjAyYyIvPgogIDxwYXRoIGQ9Ik05NiA0MiBMMTQ4IDg4IEw5NiA4OCBaIiBmaWxsPSIjYmVlM2Y4Ii8+CiAgPHBhdGggZD0iTTk2IDQyIEw0NCA4OCBMOTYgODggWiIgZmlsbD0iI2ZjODE4MSIvPgogIDxyZWN0IHg9IjUyIiB5PSI4OCIgd2lkdGg9IjQ0IiBoZWlnaHQ9IjYwIiBmaWxsPSIjYmVlM2Y4IiBvcGFjaXR5PSIuMjgiLz4KICA8cmVjdCB4PSI5NiIgeT0iODgiIHdpZHRoPSI0NCIgaGVpZ2h0PSI2MCIgZmlsbD0iI2ZjODE4MSIgb3BhY2l0eT0iLjI4Ii8+CiAgPHJlY3QgeD0iNTIiIHk9IjEzNiIgd2lkdGg9Ijg4IiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzZmNmQ1IiBvcGFjaXR5PSIuNDUiLz4KICA8cmVjdCB4PSI3OSIgeT0iMTA4IiB3aWR0aD0iMjYiIGhlaWdodD0iNDAiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iLjE1Ii8+CiAgPGNpcmNsZSBjeD0iNjgiIGN5PSIxNzAiIHI9IjE0IiBmaWxsPSIjYmVlM2Y4Ii8+CiAgPGNpcmNsZSBjeD0iOTYiIGN5PSIxNzAiIHI9IjE0IiBmaWxsPSIjZmM4MTgxIi8+CiAgPGNpcmNsZSBjeD0iMTI0IiBjeT0iMTcwIiByPSIxNCIgZmlsbD0iI2M2ZjZkNSIvPgogIDx0ZXh0IHg9IjY4IiB5PSIxNzYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9IjE0IiBmaWxsPSIjMmI2Y2IwIj5NPC90ZXh0PgogIDx0ZXh0IHg9Ijk2IiB5PSIxNzYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNzQyYTJhIj5CPC90ZXh0PgogIDx0ZXh0IHg9IjEyNCIgeT0iMTc2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzFhNDczMSI+QjwvdGV4dD4KPC9zdmc+">
+<script>
+(function(){
+  const MANIFEST = {
+    name:'Maison Familiale',short_name:'Maison',
+    description:'Planning et agenda partagés de la famille',
+    start_url:'/maison/index.html',scope:'/maison/',
+    display:'standalone',background_color:'#1a202c',theme_color:'#2d3748',
+    orientation:'portrait-primary',lang:'fr',
+    icons:[
+      {src:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIiB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiI+CiAgPHJlY3Qgd2lkdGg9IjE5MiIgaGVpZ2h0PSIxOTIiIHJ4PSI0MCIgZmlsbD0iIzFhMjAyYyIvPgogIDxwYXRoIGQ9Ik05NiA0MiBMMTQ4IDg4IEw5NiA4OCBaIiBmaWxsPSIjYmVlM2Y4Ii8+CiAgPHBhdGggZD0iTTk2IDQyIEw0NCA4OCBMOTYgODggWiIgZmlsbD0iI2ZjODE4MSIvPgogIDxyZWN0IHg9IjUyIiB5PSI4OCIgd2lkdGg9IjQ0IiBoZWlnaHQ9IjYwIiBmaWxsPSIjYmVlM2Y4IiBvcGFjaXR5PSIuMjgiLz4KICA8cmVjdCB4PSI5NiIgeT0iODgiIHdpZHRoPSI0NCIgaGVpZ2h0PSI2MCIgZmlsbD0iI2ZjODE4MSIgb3BhY2l0eT0iLjI4Ii8+CiAgPHJlY3QgeD0iNTIiIHk9IjEzNiIgd2lkdGg9Ijg4IiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzZmNmQ1IiBvcGFjaXR5PSIuNDUiLz4KICA8cmVjdCB4PSI3OSIgeT0iMTA4IiB3aWR0aD0iMjYiIGhlaWdodD0iNDAiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iLjE1Ii8+CiAgPGNpcmNsZSBjeD0iNjgiIGN5PSIxNzAiIHI9IjE0IiBmaWxsPSIjYmVlM2Y4Ii8+CiAgPGNpcmNsZSBjeD0iOTYiIGN5PSIxNzAiIHI9IjE0IiBmaWxsPSIjZmM4MTgxIi8+CiAgPGNpcmNsZSBjeD0iMTI0IiBjeT0iMTcwIiByPSIxNCIgZmlsbD0iI2M2ZjZkNSIvPgogIDx0ZXh0IHg9IjY4IiB5PSIxNzYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9IjE0IiBmaWxsPSIjMmI2Y2IwIj5NPC90ZXh0PgogIDx0ZXh0IHg9Ijk2IiB5PSIxNzYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNzQyYTJhIj5CPC90ZXh0PgogIDx0ZXh0IHg9IjEyNCIgeT0iMTc2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzFhNDczMSI+QjwvdGV4dD4KPC9zdmc+',sizes:'192x192',type:'image/svg+xml',purpose:'any maskable'},
+      {src:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIiB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiI+CiAgPHJlY3Qgd2lkdGg9IjE5MiIgaGVpZ2h0PSIxOTIiIHJ4PSI0MCIgZmlsbD0iIzFhMjAyYyIvPgogIDxwYXRoIGQ9Ik05NiA0MiBMMTQ4IDg4IEw5NiA4OCBaIiBmaWxsPSIjYmVlM2Y4Ii8+CiAgPHBhdGggZD0iTTk2IDQyIEw0NCA4OCBMOTYgODggWiIgZmlsbD0iI2ZjODE4MSIvPgogIDxyZWN0IHg9IjUyIiB5PSI4OCIgd2lkdGg9IjQ0IiBoZWlnaHQ9IjYwIiBmaWxsPSIjYmVlM2Y4IiBvcGFjaXR5PSIuMjgiLz4KICA8cmVjdCB4PSI5NiIgeT0iODgiIHdpZHRoPSI0NCIgaGVpZ2h0PSI2MCIgZmlsbD0iI2ZjODE4MSIgb3BhY2l0eT0iLjI4Ii8+CiAgPHJlY3QgeD0iNTIiIHk9IjEzNiIgd2lkdGg9Ijg4IiBoZWlnaHQ9IjEyIiBmaWxsPSIjYzZmNmQ1IiBvcGFjaXR5PSIuNDUiLz4KICA8cmVjdCB4PSI3OSIgeT0iMTA4IiB3aWR0aD0iMjYiIGhlaWdodD0iNDAiIHJ4PSI0IiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iLjE1Ii8+CiAgPGNpcmNsZSBjeD0iNjgiIGN5PSIxNzAiIHI9IjE0IiBmaWxsPSIjYmVlM2Y4Ii8+CiAgPGNpcmNsZSBjeD0iOTYiIGN5PSIxNzAiIHI9IjE0IiBmaWxsPSIjZmM4MTgxIi8+CiAgPGNpcmNsZSBjeD0iMTI0IiBjeT0iMTcwIiByPSIxNCIgZmlsbD0iI2M2ZjZkNSIvPgogIDx0ZXh0IHg9IjY4IiB5PSIxNzYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9IjE0IiBmaWxsPSIjMmI2Y2IwIj5NPC90ZXh0PgogIDx0ZXh0IHg9Ijk2IiB5PSIxNzYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNzQyYTJhIj5CPC90ZXh0PgogIDx0ZXh0IHg9IjEyNCIgeT0iMTc2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzFhNDczMSI+QjwvdGV4dD4KPC9zdmc+',sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}
+    ],
+    shortcuts:[
+      {name:'Agenda',url:'/maison/agenda.html',description:'Voir l\'agenda'}
+    ]
+  };
+  const blob = new Blob([JSON.stringify(MANIFEST)],{type:'application/manifest+json'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('link');
+  link.rel='manifest'; link.href=url;
+  document.head.appendChild(link);
+  if('serviceWorker' in navigator){
+    const sw = `
+self.addEventListener('install',e=>{self.skipWaiting();});
+self.addEventListener('activate',e=>{e.waitUntil(clients.claim());});
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET')return;
+  e.respondWith(fetch(e.request).catch(()=>new Response('Hors ligne',{status:503})));
+});
+`;
+    const swBlob = new Blob([sw],{type:'text/javascript'});
+    const swUrl = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swUrl,{scope:'/maison/'}).catch(()=>{});
+  }
+})();
+</script>
 </head>
 <body>
 
@@ -339,6 +387,9 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
     <div class="online-badge" id="syncStatus">⏳ Connexion…</div>
     <span id="pmUserBadge" onclick="switchProfile()" title="Changer de profil" style="padding:5px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.82rem;font-weight:600;cursor:pointer;">👤 ?</span>
     <a href="Agenda_Familial.html" style="padding:6px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;text-decoration:none;">📅 Agenda</a>
+    <a href="Courses_Maison.html" style="padding:6px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;text-decoration:none;">🛒 Courses</a>
+    <a href="Stats_Famille.html" style="padding:6px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;text-decoration:none;">📊 Stats</a>
+    <a href="Notifications_Config.html" style="padding:6px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;text-decoration:none;">🔔 Notifs</a>
     <button class="btn" style="background:rgba(255,255,255,0.2);color:white;font-size:0.8rem;" onclick="toggleDark()" id="darkBtn">🌙</button>
     <button class="btn" style="background:rgba(255,255,255,0.2);color:white;font-size:0.8rem;" onclick="openConfig()">⚙ Config</button>
   </div>
@@ -389,6 +440,7 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
       <option value="sport">⚽ Sport</option>
       <option value="diner">🍽️ Dîner</option>
       <option value="sortie">🎭 Sortie</option>
+      <option value="deplacement">✈️ Déplacement pro</option>
     </select>
   </div>
 
@@ -487,6 +539,7 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
       <option value="sport">⚽ Sport</option>
       <option value="diner">🍽️ Dîner</option>
       <option value="sortie">🎭 Sortie</option>
+      <option value="deplacement">✈️ Déplacement pro</option>
     </select>
     <label>Priorité</label>
     <select id="editPrio" style="width:100%;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;">
@@ -516,11 +569,25 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
     <div id="editAssignChecks" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding:8px;border:1px solid #cbd5e0;border-radius:8px;background:#f7fafc;"></div>
     <label>📍 Lieu</label>
     <input type="text" id="editLieu" placeholder="Ex : Salle des sports, Restaurant…" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;" />
+    <label>🔗 Lien / Pièce jointe</label>
+    <input type="url" id="editUrl" placeholder="https://… (Drive, réservation, photo…)" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;" />
     <label>Notes</label>
     <textarea id="editNotes" rows="3" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;"></textarea>
     <div class="modal-actions">
       <button class="btn btn-cancel-m" onclick="closeEdit()">Annuler</button>
       <button class="btn btn-save" onclick="saveEdit()">💾 Sauvegarder</button>
+    </div>
+
+    <!-- COMMENTAIRES -->
+    <div id="pmCommentsSection" style="display:none;margin-top:16px;border-top:1px solid #e2e8f0;padding-top:14px;">
+      <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#718096;margin-bottom:8px;">💬 Commentaires</div>
+      <div id="pmCommentsList" style="max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="pmCommentInput" placeholder="Écrire un commentaire…"
+          style="flex:1;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.9rem;outline:none;"
+          onkeydown="if(event.key==='Enter')pmSendComment()">
+        <button onclick="pmSendComment()" style="background:#667eea;color:white;border:none;border-radius:8px;padding:8px 14px;font-size:.85rem;font-weight:700;cursor:pointer;">Envoyer</button>
+      </div>
     </div>
   </div>
 </div>
@@ -791,7 +858,7 @@ function render() {
       `<button class="btn-sm btn-move" onclick="moveTask('${t.id}','${m.s}')">${m.l}</button>`
     ).join('');
 
-    const catLabel = { bricolage:'🔨 Bricolage', jardin:'🌿 Jardin', entretien:'🔧 Entretien', admin:'📋 Admin', rdv:'📅 Rendez-vous', sport:'⚽ Sport', diner:'🍽️ Dîner', sortie:'🎭 Sortie' }[t.cat] || t.cat;
+    const catLabel = { bricolage:'🔨 Bricolage', jardin:'🌿 Jardin', entretien:'🔧 Entretien', admin:'📋 Admin', rdv:'📅 Rendez-vous', sport:'⚽ Sport', diner:'🍽️ Dîner', sortie:'🎭 Sortie', deplacement:'✈️ Déplacement pro' }[t.cat] || t.cat;
     const prioLabel = { haute:'🔴 Haute', moyenne:'🟡 Moy.', basse:'🟢 Basse' }[t.prio] || t.prio;
 
     // Couleur de fond = personne assignée (pour tous, planning ET agenda)
@@ -828,18 +895,26 @@ function render() {
       dlHtml = ''; // on n'affiche pas la ligne date en double
     }
 
+    // Gestion confidentialité : événements privés de l'agenda
+    const isOwnerOfTask = !currentUser || t.author === currentUser || (Array.isArray(t.author) && t.author.includes(currentUser));
+    const isPrivateTask = !!t.prive && !isOwnerOfTask;
+    const displayTitle = isPrivateTask ? '🔒 Privé' : t.title;
+    const canDelete = !currentUser || t.author === currentUser || (Array.isArray(t.author) && t.author.includes(currentUser));
+
     el.innerHTML = `
       <div class="task-author" style="${getAuthorStyle(t.author)}">👤 ${t.author || 'Inconnu'}</div>
-      <div class="task-title">${t.title}</div>
+      <div class="task-title">${displayTitle}</div>
       <div class="task-meta">
         <span class="badge badge-cat-${t.cat}">${catLabel}</span>
         <span class="badge badge-prio-${t.prio}">${prioLabel}</span>
+        ${t.prive ? '<span style="font-size:.65rem;background:#fed7d7;color:#c53030;border:1px solid #feb2b2;border-radius:6px;padding:1px 6px;">🔒 Privé</span>' : ''}
       </div>
-      ${rdvDateHtml}
-      ${dlHtml}
-      ${t.lieu ? `<div style="font-size:0.72rem;color:#4a5568;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ${t.lieu}</div>` : ''}
-      ${t.notes ? `<div onclick="this.style.whiteSpace=this.style.whiteSpace==='normal'?'nowrap':'normal'" title="Cliquer pour lire" style="font-size:0.72rem;color:#718096;margin-top:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;" >📝 ${t.notes}</div>` : ''}
-      <div class="task-actions">${moveBtns}<button class="btn-sm" style="background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8;" onclick="openEdit('${t.id}')">✏ Modifier</button><button class="btn-sm btn-del" onclick="deleteTask('${t.id}')">✕</button></div>`;
+      ${isPrivateTask ? '' : rdvDateHtml}
+      ${isPrivateTask ? '' : dlHtml}
+      ${(!isPrivateTask && t.lieu) ? `<div style="font-size:0.72rem;color:#4a5568;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ${t.lieu}</div>` : ''}
+      ${(!isPrivateTask && t.url) ? `<div style="margin-top:3px;"><a href="${t.url}" target="_blank" rel="noopener" style="font-size:0.72rem;color:#3182ce;text-decoration:none;font-weight:600;" onclick="event.stopPropagation()">🔗 Lien</a></div>` : ''}
+      ${(!isPrivateTask && t.notes) ? `<div onclick="this.style.whiteSpace=this.style.whiteSpace==='normal'?'nowrap':'normal'" title="Cliquer pour lire" style="font-size:0.72rem;color:#718096;margin-top:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;" >📝 ${t.notes}</div>` : ''}
+      <div class="task-actions">${moveBtns}<button class="btn-sm" style="background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8;" onclick="openEdit('${t.id}')">✏ Modifier</button>${canDelete ? `<button class="btn-sm btn-del" onclick="deleteTask('${t.id}')">✕</button>` : ''}</div>`;
 
     document.getElementById('tasks-' + t.status).appendChild(el);
   });
@@ -1198,6 +1273,14 @@ async function moveTask(id, status) {
 }
 
 async function deleteTask(id) {
+  const t = window._tasks[id];
+  if (t && currentUser && t.author !== currentUser) {
+    const authors = Array.isArray(t.author) ? t.author : [t.author];
+    if (!authors.includes(currentUser)) {
+      toast('🔒 Seul l\'auteur peut supprimer cette tâche');
+      return;
+    }
+  }
   if (!confirm('Supprimer cette tâche ?')) return;
   if (window.fbDelete) {
     await window.fbDelete(id);
@@ -1312,6 +1395,7 @@ function openEdit(id) {
   document.getElementById('editDate').value   = t.date  || '';
   document.getElementById('editAlert').value  = t.alertDays || 7;
   document.getElementById('editLieu').value   = t.lieu   || '';
+  document.getElementById('editUrl').value    = t.url    || '';
   document.getElementById('editNotes').value  = t.notes  || '';
   setEditTime('editTimeH','editTimeM', t.time || '');
   setEditTime('editTimeEndH','editTimeEndM', t.timeEnd || '');
@@ -1336,11 +1420,16 @@ function openEdit(id) {
     lbl.appendChild(document.createTextNode(name));
     checksWrap.appendChild(lbl);
   });
+  // Commentaires
+  document.getElementById('pmCommentsSection').style.display = 'block';
+  pmLoadComments(id);
   document.getElementById('editOverlay').style.display = 'flex';
 }
 
 function closeEdit() {
+  if (pmCommentsUnsubscribe) { pmCommentsUnsubscribe(); pmCommentsUnsubscribe = null; }
   document.getElementById('editOverlay').style.display = 'none';
+  document.getElementById('pmCommentsSection').style.display = 'none';
   editId = null;
 }
 
@@ -1361,6 +1450,7 @@ async function saveEdit() {
     timeEnd:   getEditTime('editTimeEndH','editTimeEndM'),
     alertDays: parseInt(document.getElementById('editAlert').value) || 7,
     lieu:      document.getElementById('editLieu').value.trim(),
+    url:       document.getElementById('editUrl').value.trim(),
     author:    [...document.querySelectorAll('#editAssignChecks input[type=checkbox]:checked')].map(cb => cb.value).join(', ') || '',
     notes:     document.getElementById('editNotes').value.trim(),
     status:    newStatus,
@@ -1647,6 +1737,66 @@ function autoArchive() {
 }
 // Lancer l'archivage auto une fois au démarrage (après 5s)
 setTimeout(autoArchive, 5000);
+
+// ══════════════════════════════════════════════════════════════
+// COMMENTAIRES (nœud Firebase partagé avec Agenda : maison/comments)
+// ══════════════════════════════════════════════════════════════
+let pmCommentsUnsubscribe = null;
+let pmCurrentCommentEventId = null;
+
+const PERSON_COLORS_PM = {
+  Machin: { bg:'#bee3f8', text:'#1a365d', border:'#90cdf4' },
+  Bidule: { bg:'#fc8181', text:'#742a2a', border:'#e53e3e' },
+  Bibi:   { bg:'#c6f6d5', text:'#1a4731', border:'#68d391' }
+};
+
+function pmEscHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function pmLoadComments(eventId) {
+  pmCurrentCommentEventId = eventId;
+  const listEl = document.getElementById('pmCommentsList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="color:#a0aec0;font-size:.82rem;text-align:center;padding:8px;">Chargement…</div>';
+  if (pmCommentsUnsubscribe) { pmCommentsUnsubscribe(); pmCommentsUnsubscribe = null; }
+  if (!window._pmFbCommentsRef) return;
+  const commentRef = window._pmFbCommentsRef(eventId);
+  pmCommentsUnsubscribe = window._pmFbOnValue(commentRef, snap => {
+    const data = snap.val() || {};
+    const comments = Object.entries(data)
+      .map(([id, c]) => ({id, ...c}))
+      .sort((a, b) => a.createdAt - b.createdAt);
+    if (comments.length === 0) {
+      listEl.innerHTML = '<div style="color:#a0aec0;font-size:.82rem;text-align:center;padding:8px;">Aucun commentaire</div>';
+      return;
+    }
+    listEl.innerHTML = comments.map(c => {
+      const pc = PERSON_COLORS_PM[c.author] || {bg:'#e2e8f0',text:'#4a5568',border:'#cbd5e0'};
+      const dt = c.createdAt ? new Date(c.createdAt).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      return `<div style="display:flex;flex-direction:column;gap:2px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:10px;background:${pc.bg};color:${pc.text};border:1px solid ${pc.border};">${c.author||'?'}</span>
+          <span style="font-size:.68rem;color:#a0aec0;">${dt}</span>
+        </div>
+        <div style="font-size:.88rem;color:#2d3748;padding:4px 6px;background:#f7fafc;border-radius:6px;">${pmEscHtml(c.text||'')}</div>
+      </div>`;
+    }).join('');
+    listEl.scrollTop = listEl.scrollHeight;
+  });
+}
+
+function pmSendComment() {
+  const input = document.getElementById('pmCommentInput');
+  const text = (input.value || '').trim();
+  if (!text) return;
+  if (!currentUser) { toast('Connectez-vous d\'abord'); return; }
+  if (!pmCurrentCommentEventId) return;
+  if (!window._pmFbCommentsPush) return;
+  window._pmFbCommentsPush(pmCurrentCommentEventId, {
+    text, author: currentUser, createdAt: Date.now()
+  });
+  input.value = '';
+}
+window.pmSendComment = pmSendComment;
 </script>
 </body>
 </html>
