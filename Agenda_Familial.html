@@ -766,14 +766,15 @@ function renderMobileList() {
       const recurIcon = e._originalId ? ' 🔁' : '';
       const emoji = TYPE_EMOJI[type] || '📌';
 
-      html += `<div class="mobile-event-row" onclick="openEdit('${openId}')">
-        <div class="mobile-event-dot" style="background:${color};"></div>
+      const mobileBg   = personC ? personC.bg   : '#f7fafc';
+      const mobileText = personC ? personC.text : '#2d3748';
+      html += `<div class="mobile-event-row" onclick="openEdit('${openId}')" style="background:${mobileBg};border-left:4px solid ${color};">
         <div class="mobile-event-info">
-          <div class="mobile-event-title">${emoji} ${e.title||e.label||''}${recurIcon}</div>
-          ${timeStr ? `<div class="mobile-event-meta">🕐 ${timeStr}</div>` : ''}
-          ${e.lieu ? `<div class="mobile-event-meta">📍 ${e.lieu}</div>` : ''}
+          <div class="mobile-event-title" style="color:${mobileText};">${emoji} ${e.title||e.label||''}${recurIcon}</div>
+          ${timeStr ? `<div class="mobile-event-meta" style="color:${mobileText};opacity:0.75;">🕐 ${timeStr}</div>` : ''}
+          ${e.lieu ? `<div class="mobile-event-meta" style="color:${mobileText};opacity:0.75;">📍 ${e.lieu}</div>` : ''}
         </div>
-        ${personC ? `<span class="mobile-event-who" style="background:${personC.bg};color:${personC.text};">${firstWho}</span>` : ''}
+        ${firstWho ? `<span class="mobile-event-who" style="background:rgba(0,0,0,0.12);color:${mobileText};font-weight:700;">${firstWho}</span>` : ''}
       </div>`;
     });
 
@@ -806,10 +807,15 @@ function renderWeekStrip() {
     const isToday = ds === toDateStr(today);
     const cls = isToday ? 'week-day today' : evts.length ? 'week-day has-event' : 'week-day';
     let evHtml = evts.slice(0, 3).map(e => {
-      const tc = TYPE_CLASS[getEventType(e)] || 'type-autre';
+      const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', autre:'#718096' };
+      const typeColor = typeColors[getEventType(e)] || '#718096';
+      const firstAuthor = (e.author || '').split(',')[0].trim();
+      const personC = PERSON_COLORS[firstAuthor];
+      const chipBg   = personC ? personC.bg   : '#edf2f7';
+      const chipText = personC ? personC.text : '#2d3748';
       const openId = e._originalId || e.id;
       const recurIcon = e._originalId ? ' 🔁' : '';
-      return `<div class="week-event-chip ${tc}" onclick="openEdit('${openId}')" title="${e.title||e.label||''}">${eventLabel(e)}${recurIcon}</div>`;
+      return `<div class="week-event-chip" style="background:${chipBg};color:${chipText};border-left:3px solid ${typeColor};" onclick="openEdit('${openId}')" title="${e.title||e.label||''}">${eventLabel(e)}${recurIcon}</div>`;
     }).join('');
     if (evts.length > 3) evHtml += `<div class="more-badge">+${evts.length-3}</div>`;
     html += `<div class="${cls}">
@@ -880,13 +886,18 @@ function buildCell(d, ds, otherMonth, isToday, evts) {
   const bannerHtml = buildMultiDayBanners(ds);
 
   let evHtml = evts.slice(0, 3).map(e => {
-    const tc = TYPE_CLASS[getEventType(e)] || 'type-autre';
+    const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', autre:'#718096' };
+    const typeColor = typeColors[getEventType(e)] || '#718096';
+    const firstAuthor = (e.author || '').split(',')[0].trim();
+    const personC = PERSON_COLORS[firstAuthor];
+    const pillBg   = personC ? personC.bg   : '#edf2f7';
+    const pillText = personC ? personC.text : '#2d3748';
     const who = (e.author || '').split(',').map(n => n.trim()).filter(Boolean).join(', ');
-    const openId = e._originalId || e.id; // pour les récurrents, ouvre l'original
+    const openId = e._originalId || e.id;
     const recurIcon = e._originalId ? ' 🔁' : '';
-    return `<div class="event-pill ${tc}" style="display:flex;justify-content:space-between;gap:6px;" onclick="event.stopPropagation();openEdit('${openId}')">
+    return `<div class="event-pill" style="display:flex;justify-content:space-between;gap:6px;background:${pillBg};color:${pillText};border-left:3px solid ${typeColor};border-color:${typeColor}44;" onclick="event.stopPropagation();openEdit('${openId}')">
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${eventLabel(e)}${recurIcon}</span>
-      ${who ? `<span style="flex-shrink:0;opacity:0.7;font-weight:500;">${who}</span>` : ''}
+      ${who ? `<span style="flex-shrink:0;opacity:0.8;font-weight:600;">${who}</span>` : ''}
     </div>`;
   }).join('');
   if (evts.length > 3) evHtml += `<div class="more-badge">+${evts.length-3} autres</div>`;
