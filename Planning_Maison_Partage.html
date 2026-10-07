@@ -984,7 +984,7 @@ async function quickAdd() {
     alertDays: parseInt(document.getElementById('qAlert').value) || 7,
     lieu:      document.getElementById('qLieu').value.trim(),
     notes:     '',
-    createdAt: new Date().toISOString(),
+    createdAt: Date.now(),
   };
 
   if (window.fbAdd) {

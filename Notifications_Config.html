@@ -9,7 +9,7 @@
     --bg:#f0f4f8; --card:#fff; --txt:#2d3748; --txt2:#718096;
     --hdr:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
     --green:#276749; --green-bg:#c6f6d5; --red:#c53030; --red-bg:#fed7d7;
-    --blue:#2b6cb0; --blue-bg:#bee3f8;
+    --blue:#2b6cb0; --blue-bg:#bee3f8; --orange:#c05621; --orange-bg:#feebc8;
   }
   body.dark { --bg:#1a202c; --card:#2d3748; --txt:#e2e8f0; --txt2:#a0aec0; }
   * { box-sizing:border-box; margin:0; padding:0; }
@@ -21,17 +21,18 @@
   .card { background:var(--card); border-radius:14px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,.07); }
   .card-title { font-size:.9rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--txt2); margin-bottom:14px; }
   .status-row { display:flex; align-items:center; gap:12px; padding:12px; border-radius:10px; margin-bottom:12px; }
-  .status-row.ok  { background:var(--green-bg); }
-  .status-row.err { background:var(--red-bg); }
-  .status-row.info { background:var(--blue-bg); }
+  .status-row.ok     { background:var(--green-bg); }
+  .status-row.err    { background:var(--red-bg); }
+  .status-row.info   { background:var(--blue-bg); }
+  .status-row.warn   { background:var(--orange-bg); }
   .status-icon { font-size:1.4rem; flex-shrink:0; }
   .status-text { font-size:.88rem; font-weight:600; }
   .status-text small { display:block; font-weight:400; font-size:.78rem; opacity:.8; }
   .btn { display:inline-block; padding:10px 20px; border-radius:10px; border:none; cursor:pointer; font-size:.9rem; font-weight:700; transition:all .2s; }
-  .btn-primary { background:var(--hdr); color:white; }
-  .btn-danger  { background:var(--red-bg); color:var(--red); border:1.5px solid var(--red); }
+  .btn-primary   { background:var(--hdr); color:white; }
+  .btn-danger    { background:var(--red-bg); color:var(--red); border:1.5px solid var(--red); }
   .btn-secondary { background:var(--blue-bg); color:var(--blue); border:1.5px solid var(--blue); }
-  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-green     { background:var(--green-bg); color:var(--green); border:1.5px solid var(--green); }
   .person-toggles { display:flex; flex-direction:column; gap:10px; }
   .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:10px; border:1.5px solid #e2e8f0; }
   .toggle-label { font-size:.9rem; font-weight:600; }
@@ -41,32 +42,51 @@
   .slider:before { content:''; position:absolute; width:18px; height:18px; border-radius:50%; background:white; left:3px; bottom:3px; transition:.3s; }
   input:checked + .slider { background:#667eea; }
   input:checked + .slider:before { transform:translateX(20px); }
-  .token-box { font-family:monospace; font-size:.72rem; word-break:break-all; background:#f7fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; color:#4a5568; max-height:80px; overflow-y:auto; margin-top:8px; }
-  .divider { height:1px; background:#e2e8f0; margin:8px 0; }
-  #log { font-family:monospace; font-size:.78rem; color:var(--txt2); }
+  .info-box { background:var(--orange-bg); border:1.5px solid #f6ad55; border-radius:10px; padding:12px 14px; font-size:.83rem; line-height:1.5; color:#7b341e; }
+  .info-box strong { display:block; margin-bottom:4px; }
+  #log { font-family:monospace; font-size:.78rem; color:var(--txt2); max-height:160px; overflow-y:auto; }
   .log-line { padding:2px 0; border-bottom:1px dotted rgba(0,0,0,.06); }
   .log-ok   { color:var(--green); }
   .log-err  { color:var(--red); }
   .log-info { color:var(--blue); }
+  .notif-history { display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto; }
+  .notif-item { padding:10px 12px; border-radius:10px; border:1.5px solid #e2e8f0; font-size:.85rem; }
+  .notif-item .notif-title { font-weight:700; }
+  .notif-item .notif-meta  { font-size:.75rem; color:var(--txt2); margin-top:3px; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:.72rem; font-weight:700; }
+  .badge-machin { background:#bee3f8; color:#1a365d; }
+  .badge-bidule { background:#fc8181; color:#742a2a; }
+  .badge-bibi   { background:#c6f6d5; color:#1a4731; }
 </style>
 </head>
 <body>
+
 <header>
-  <h1>🔔 Notifications push</h1>
+  <h1>🔔 Notifications</h1>
   <div style="display:flex;gap:8px;align-items:center;">
     <a class="nav-link" href="Agenda_Familial.html">📅 Agenda</a>
     <a class="nav-link" href="Planning_Maison_Partage.html">🏠 Planning</a>
+    <a class="nav-link" href="Courses_Maison.html">🛒 Courses</a>
+    <a class="nav-link" href="Stats_Famille.html">📊 Stats</a>
   </div>
 </header>
 
 <div class="container">
 
-  <!-- Statut global -->
+  <!-- Explication -->
+  <div class="info-box">
+    <strong>ℹ️ Notifications gratuites (sans FCM)</strong>
+    Les notifications apparaissent quand l'app est <b>ouverte dans le navigateur</b>.
+    Pour les recevoir en arrière-plan sur mobile, ajoutez l'app à l'écran d'accueil (PWA).
+    Aucun abonnement payant requis.
+  </div>
+
+  <!-- Statut permission -->
   <div class="card">
-    <div class="card-title">État des notifications</div>
+    <div class="card-title">Permission navigateur</div>
     <div id="permStatus" class="status-row info">
       <div class="status-icon">⏳</div>
-      <div class="status-text">Vérification en cours…<small> </small></div>
+      <div class="status-text">Vérification…<small> </small></div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-primary" id="btnEnable" onclick="enableNotifications()">🔔 Activer les notifications</button>
@@ -74,161 +94,227 @@
     </div>
   </div>
 
-  <!-- Profil actif -->
+  <!-- Profil -->
   <div class="card">
-    <div class="card-title">Mon profil</div>
-    <div id="profileInfo" style="font-size:.9rem;color:var(--txt2);">Chargement…</div>
-    <div style="margin-top:12px;">
-      <button class="btn btn-secondary" onclick="switchProfile()">👤 Changer de profil</button>
-    </div>
+    <div class="card-title">Mon profil (cet appareil)</div>
+    <div id="profileInfo" style="font-size:.9rem;margin-bottom:12px;">Chargement…</div>
+    <button class="btn btn-secondary" onclick="switchProfile()">👤 Changer de profil</button>
   </div>
 
-  <!-- Quand recevoir des notifs -->
+  <!-- Préférences -->
   <div class="card">
-    <div class="card-title">Recevoir des notifications pour…</div>
+    <div class="card-title">Me notifier quand…</div>
     <div class="person-toggles">
       <div class="toggle-row">
-        <span class="toggle-label" style="color:#1a365d;">🔵 Événements de Machin</span>
-        <label class="toggle"><input type="checkbox" id="notif_Machin" onchange="saveNotifPrefs()"><span class="slider"></span></label>
+        <span class="toggle-label" style="color:#1a365d;">🔵 Machin crée un événement</span>
+        <label class="toggle"><input type="checkbox" id="notif_Machin" onchange="savePrefs()" checked><span class="slider"></span></label>
       </div>
       <div class="toggle-row">
-        <span class="toggle-label" style="color:#742a2a;">🔴 Événements de Bidule</span>
-        <label class="toggle"><input type="checkbox" id="notif_Bidule" onchange="saveNotifPrefs()"><span class="slider"></span></label>
+        <span class="toggle-label" style="color:#742a2a;">🔴 Bidule crée un événement</span>
+        <label class="toggle"><input type="checkbox" id="notif_Bidule" onchange="savePrefs()" checked><span class="slider"></span></label>
       </div>
       <div class="toggle-row">
-        <span class="toggle-label" style="color:#1a4731;">🟢 Événements de Bibi</span>
-        <label class="toggle"><input type="checkbox" id="notif_Bibi" onchange="saveNotifPrefs()"><span class="slider"></span></label>
+        <span class="toggle-label" style="color:#1a4731;">🟢 Bibi crée un événement</span>
+        <label class="toggle"><input type="checkbox" id="notif_Bibi" onchange="savePrefs()" checked><span class="slider"></span></label>
       </div>
       <div class="toggle-row">
-        <span class="toggle-label">📝 Nouveaux commentaires</span>
-        <label class="toggle"><input type="checkbox" id="notif_comments" onchange="saveNotifPrefs()" checked><span class="slider"></span></label>
+        <span class="toggle-label">💬 Nouveau commentaire</span>
+        <label class="toggle"><input type="checkbox" id="notif_comments" onchange="savePrefs()" checked><span class="slider"></span></label>
       </div>
       <div class="toggle-row">
-        <span class="toggle-label">🛒 Courses ajoutées</span>
-        <label class="toggle"><input type="checkbox" id="notif_courses" onchange="saveNotifPrefs()"><span class="slider"></span></label>
+        <span class="toggle-label">🛒 Article ajouté aux courses</span>
+        <label class="toggle"><input type="checkbox" id="notif_courses" onchange="savePrefs()"><span class="slider"></span></label>
       </div>
     </div>
   </div>
 
-  <!-- Tester -->
+  <!-- Test -->
   <div class="card">
     <div class="card-title">Test</div>
-    <p style="font-size:.85rem;color:var(--txt2);margin-bottom:12px;">Envoie une notification de test sur cet appareil pour vérifier que tout fonctionne.</p>
-    <button class="btn btn-secondary" onclick="testNotification()">📩 Envoyer une notification test</button>
+    <p style="font-size:.85rem;color:var(--txt2);margin-bottom:12px;">Envoie une notification de test immédiatement sur cet appareil.</p>
+    <button class="btn btn-green" onclick="testNotif()">📩 Tester maintenant</button>
   </div>
 
-  <!-- Token debug -->
+  <!-- Historique des notifs reçues -->
   <div class="card">
-    <div class="card-title">Token appareil (debug)</div>
-    <div id="tokenDisplay" class="token-box">—</div>
-    <div id="log" style="margin-top:12px;"></div>
+    <div class="card-title">Dernières notifications reçues</div>
+    <div id="notifHistory" class="notif-history">
+      <div style="color:var(--txt2);font-size:.85rem;">Aucune notification reçue sur cet appareil.</div>
+    </div>
+    <div style="margin-top:10px;">
+      <button class="btn btn-danger" onclick="clearHistory()" style="font-size:.8rem;padding:6px 14px;">🗑 Effacer l'historique</button>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="card">
+    <div class="card-title">Journal</div>
+    <div id="log"></div>
   </div>
 
 </div>
 
-<!-- ════════════════════════════════════════════════════════
-     Auth + profil (identique aux autres pages)
-════════════════════════════════════════════════════════ -->
+<!-- ── AUTH ───────────────────────────────────────────── -->
 <script>
-const AUTH_KEY = 'maison_auth';
-const AUTH_PWD = 'Maison05';
+const AUTH_KEY = 'maison_auth', AUTH_PWD = 'Maison05';
 if (localStorage.getItem(AUTH_KEY) !== AUTH_PWD) {
-  const pwd = prompt('Mot de passe Maison :');
-  if (pwd !== AUTH_PWD) { document.body.innerHTML='<div style="text-align:center;padding:60px;color:#c53030;">❌ Accès refusé</div>'; throw new Error('auth'); }
+  const p = prompt('Mot de passe Maison :');
+  if (p !== AUTH_PWD) { document.body.innerHTML='<div style="text-align:center;padding:60px;color:#c53030;">❌ Accès refusé</div>'; throw 0; }
   localStorage.setItem(AUTH_KEY, AUTH_PWD);
 }
 
-const MEMBERS_LIST = ['Machin','Bidule','Bibi'];
+// ── Profil ────────────────────────────────────────────
+const MEMBERS = ['Machin','Bidule','Bibi'];
 let currentUser = null;
-
 function loadProfile() {
-  try { const p = JSON.parse(localStorage.getItem('pmUser')||'null'); if (p && p.name) currentUser = p.name; } catch(e) {}
-  updateProfileInfo();
+  try { const p = JSON.parse(localStorage.getItem('pmUser')||'null'); if (p?.name) currentUser = p.name; } catch(e){}
+  renderProfile();
 }
-function updateProfileInfo() {
-  const el = document.getElementById('profileInfo');
-  if (!el) return;
-  const colors = { Machin:'#bee3f8', Bidule:'#fc8181', Bibi:'#c6f6d5' };
-  const texts  = { Machin:'#1a365d', Bidule:'#742a2a', Bibi:'#1a4731' };
+const COLORS = {
+  Machin:{bg:'#bee3f8',text:'#1a365d'}, Bidule:{bg:'#fc8181',text:'#742a2a'}, Bibi:{bg:'#c6f6d5',text:'#1a4731'}
+};
+function renderProfile() {
+  const el = document.getElementById('profileInfo'); if (!el) return;
   if (currentUser) {
-    el.innerHTML = `<span style="display:inline-block;padding:4px 14px;border-radius:20px;background:${colors[currentUser]||'#e2e8f0'};color:${texts[currentUser]||'#2d3748'};font-weight:700;font-size:.95rem;">👤 ${currentUser}</span>`;
+    const c = COLORS[currentUser]||{bg:'#e2e8f0',text:'#2d3748'};
+    el.innerHTML = `<span style="padding:4px 14px;border-radius:20px;background:${c.bg};color:${c.text};font-weight:700;">👤 ${currentUser}</span> — notifications activées sur cet appareil`;
   } else {
-    el.innerHTML = '<span style="color:#c53030;font-weight:600;">⚠ Aucun profil — choisissez un profil pour lier les notifications à votre compte</span>';
+    el.innerHTML = '<span style="color:#c53030;font-weight:600;">⚠ Choisissez un profil pour personnaliser les notifications</span>';
   }
 }
-function checkOrSetupPin(name, onSuccess) {
-  const key = 'pmPin_'+name;
-  const stored = localStorage.getItem(key);
+function checkOrSetupPin(name, cb) {
+  const key='pmPin_'+name, stored=localStorage.getItem(key);
   if (stored) {
-    const entered = prompt('PIN pour '+name+' :');
-    if (!entered) return;
-    if (entered === stored) { onSuccess(); } else { alert('PIN incorrect'); }
+    const e=prompt('PIN pour '+name+' :'); if (!e) return;
+    if (e===stored) cb(); else alert('PIN incorrect');
   } else {
-    const pin = prompt('Créer un PIN (4 chiffres) pour '+name+' :');
-    if (!pin || !/^\d{4}$/.test(pin)) { alert('PIN invalide'); return; }
-    const confirm2 = prompt('Confirmez le PIN :');
-    if (pin !== confirm2) { alert('PINs différents'); return; }
-    localStorage.setItem(key, pin);
-    onSuccess();
+    const pin=prompt('Créer un PIN (4 chiffres) pour '+name+' :');
+    if (!pin||!/^\d{4}$/.test(pin)){alert('PIN invalide');return;}
+    if (pin!==prompt('Confirmez :'))  {alert('PINs différents');return;}
+    localStorage.setItem(key, pin); cb();
   }
 }
 function switchProfile() {
-  const choice = prompt('Choisissez :\n1 = Machin\n2 = Bidule\n3 = Bibi\n0 = Déconnexion');
-  if (choice === null) return;
-  if (choice === '0') { currentUser = null; localStorage.removeItem('pmUser'); updateProfileInfo(); return; }
-  const map = {'1':'Machin','2':'Bidule','3':'Bibi'};
-  const name = map[choice] || MEMBERS_LIST.find(m => m.toLowerCase() === choice.toLowerCase());
-  if (!name) { alert('Choix invalide'); return; }
-  checkOrSetupPin(name, () => {
-    currentUser = name;
-    localStorage.setItem('pmUser', JSON.stringify({name}));
-    updateProfileInfo();
-    log(`Profil changé : ${name}`, 'ok');
-  });
+  const c=prompt('1=Machin  2=Bidule  3=Bibi  0=Déconnexion'); if(c===null)return;
+  if(c==='0'){currentUser=null;localStorage.removeItem('pmUser');renderProfile();return;}
+  const m={'1':'Machin','2':'Bidule','3':'Bibi'}; const name=m[c];
+  if(!name){alert('Choix invalide');return;}
+  checkOrSetupPin(name,()=>{currentUser=name;localStorage.setItem('pmUser',JSON.stringify({name}));renderProfile();});
 }
 loadProfile();
 
-// Log console dans la page
-function log(msg, type='info') {
-  const el = document.getElementById('log');
-  if (!el) return;
-  const d = document.createElement('div');
-  d.className = 'log-line log-'+type;
-  d.textContent = `[${new Date().toLocaleTimeString('fr-FR')}] ${msg}`;
-  el.prepend(d);
-  if (el.children.length > 20) el.lastChild.remove();
+// ── Log ───────────────────────────────────────────────
+function log(msg,type='info') {
+  const el=document.getElementById('log'); if(!el)return;
+  const d=document.createElement('div');
+  d.className='log-line log-'+type;
+  d.textContent=`[${new Date().toLocaleTimeString('fr-FR')}] ${msg}`;
+  el.prepend(d); if(el.children.length>30)el.lastChild.remove();
 }
 
-// ── Préférences notifications ──
-function saveNotifPrefs() {
-  const prefs = {};
-  ['Machin','Bidule','Bibi','comments','courses'].forEach(k => {
-    const el = document.getElementById('notif_'+k);
-    if (el) prefs[k] = el.checked;
+// ── Préférences notifs ────────────────────────────────
+function savePrefs() {
+  const prefs={};
+  ['Machin','Bidule','Bibi','comments','courses'].forEach(k=>{
+    const el=document.getElementById('notif_'+k); if(el) prefs[k]=el.checked;
   });
-  localStorage.setItem('notif_prefs', JSON.stringify(prefs));
-  log('Préférences sauvegardées', 'ok');
+  localStorage.setItem('notif_prefs',JSON.stringify(prefs));
 }
-function loadNotifPrefs() {
+function loadPrefs() {
   try {
-    const prefs = JSON.parse(localStorage.getItem('notif_prefs')||'{}');
-    ['Machin','Bidule','Bibi','comments','courses'].forEach(k => {
-      const el = document.getElementById('notif_'+k);
-      if (el && prefs[k] !== undefined) el.checked = prefs[k];
+    const p=JSON.parse(localStorage.getItem('notif_prefs')||'{}');
+    ['Machin','Bidule','Bibi','comments','courses'].forEach(k=>{
+      const el=document.getElementById('notif_'+k); if(el&&p[k]!==undefined)el.checked=p[k];
     });
-  } catch(e) {}
+  } catch(e){}
 }
-loadNotifPrefs();
+loadPrefs();
+
+// ── Historique local ──────────────────────────────────
+function getHistory() { try{return JSON.parse(localStorage.getItem('notif_history')||'[]');}catch{return [];} }
+function addHistory(item) {
+  const h=getHistory(); h.unshift({...item,receivedAt:Date.now()});
+  localStorage.setItem('notif_history',JSON.stringify(h.slice(0,50)));
+  renderHistory();
+}
+function clearHistory() { localStorage.removeItem('notif_history'); renderHistory(); }
+function renderHistory() {
+  const el=document.getElementById('notifHistory'); if(!el)return;
+  const h=getHistory();
+  if(!h.length){el.innerHTML='<div style="color:var(--txt2);font-size:.85rem;">Aucune notification reçue sur cet appareil.</div>';return;}
+  el.innerHTML=h.map(n=>{
+    const date=new Date(n.receivedAt).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const badge=n.author?`<span class="badge badge-${(n.author||'').toLowerCase()}">${n.author}</span> `:'';
+    return `<div class="notif-item">${badge}<span class="notif-title">${escHtml(n.title)}</span><div class="notif-meta">${escHtml(n.body||'')} · ${date}</div></div>`;
+  }).join('');
+}
+function escHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+renderHistory();
+
+// ── Permission & notification ─────────────────────────
+function updatePermUI(state) {
+  const row=document.getElementById('permStatus');
+  const btnE=document.getElementById('btnEnable');
+  const btnD=document.getElementById('btnDisable');
+  const msgs={
+    granted:  {cls:'ok',  icon:'✅',txt:'Notifications activées',    sub:'Vous recevrez les alertes quand l\'app est ouverte.'},
+    denied:   {cls:'err', icon:'🚫',txt:'Permission refusée',         sub:'Autorisez les notifications dans les paramètres du navigateur, puis rechargez la page.'},
+    default:  {cls:'info',icon:'🔔',txt:'Notifications désactivées',  sub:'Cliquez sur "Activer" pour recevoir les alertes.'},
+    unsupported:{cls:'warn',icon:'⚠️',txt:'Non supporté',             sub:'Votre navigateur ne supporte pas les notifications. Essayez Chrome ou Safari (iOS 16.4+).'},
+  };
+  const m=msgs[state]||msgs.default;
+  row.className='status-row '+m.cls;
+  row.innerHTML=`<div class="status-icon">${m.icon}</div><div class="status-text">${m.txt}<small>${m.sub}</small></div>`;
+  btnE.style.display=(state==='granted')?'none':'';
+  btnD.style.display=(state==='granted')?'':'none';
+}
+
+window.enableNotifications = async function() {
+  if(!('Notification' in window)){updatePermUI('unsupported');return;}
+  log('Demande de permission…','info');
+  const perm=await Notification.requestPermission();
+  updatePermUI(perm);
+  if(perm==='granted'){
+    localStorage.setItem('notif_enabled','1');
+    log('Notifications activées ✓','ok');
+  } else {
+    log('Permission refusée','err');
+  }
+};
+window.disableNotifications = function(){
+  localStorage.setItem('notif_enabled','0');
+  updatePermUI('default');
+  log('Notifications désactivées','ok');
+};
+
+window.testNotif = function() {
+  if(Notification.permission!=='granted'){alert('Activez d\'abord les notifications.');return;}
+  showNotif({title:'🏠 Maison Famille – test',body:'Les notifications fonctionnent ! 🎉',author:currentUser||'test'});
+  log('Notification test envoyée','ok');
+};
+
+function showNotif(data) {
+  if(Notification.permission!=='granted') return;
+  if(localStorage.getItem('notif_enabled')==='0') return;
+  const n=new Notification(data.title||'Maison Famille',{
+    body: data.body||'',
+    icon: 'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏠</text></svg>',
+    badge:'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔔</text></svg>',
+    tag: data.tag||'maison-'+Date.now(),
+    renotify:true
+  });
+  addHistory(data);
+  n.onclick=()=>{ window.focus(); n.close(); };
+}
+// expose globalement pour que les autres pages puissent l'utiliser
+window.maisонShowNotif = showNotif;
 </script>
 
-<!-- ════════════════════════════════════════════════════════
-     FIREBASE MESSAGING (FCM)
-════════════════════════════════════════════════════════ -->
+<!-- ── FIREBASE : écoute en temps réel ───────────────── -->
 <script type="module">
 import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-import { getMessaging, getToken, deleteToken, onMessage }
-  from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js';
+import { getDatabase, ref, onValue, query, orderByChild, limitToLast }
+  from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
 const firebaseConfig = {
   apiKey:            "AIzaSyB2YnkiivjhxOmmAfS9JtvRRWwB3dsF86U",
@@ -240,160 +326,94 @@ const firebaseConfig = {
   appId:             "1:365827317336:web:27412c4c05d67a7a81342d"
 };
 
-// VAPID public key (à remplacer par la vraie clé dans Firebase Console > Cloud Messaging)
-// Firebase Console → Paramètres projet → Cloud Messaging → Web Push certificates → Generate key pair
-const VAPID_KEY = 'YOUR_VAPID_KEY_HERE'; // ← À remplacer
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
 
-const app       = initializeApp(firebaseConfig);
-const db        = getDatabase(app);
-const messaging = getMessaging(app);
+// Timestamp de démarrage — on n'affiche pas les anciennes données
+const startedAt = Date.now();
+let initialized = { tasks: false, comments: false, courses: false };
 
-// ── Enregistrement service worker FCM ────────────────────
-async function registerFcmSW() {
-  if (!('serviceWorker' in navigator)) return null;
-  try {
-    // SW minimal compatible FCM (scope /maison/)
-    const swCode = `
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
-firebase.initializeApp(${JSON.stringify(firebaseConfig)});
-const messaging = firebase.messaging();
-messaging.onBackgroundMessage(payload => {
-  const { title, body, icon } = payload.notification || {};
-  self.registration.showNotification(title || 'Maison Famille', {
-    body: body || '',
-    icon: icon || '/maison/icon-192.png',
-    badge: '/maison/icon-192.png',
-    tag: payload.collapseKey || 'maison-notif',
-    data: payload.data || {}
-  });
-});`;
-    const blob = new Blob([swCode], {type:'text/javascript'});
-    const url  = URL.createObjectURL(blob);
-    const reg  = await navigator.serviceWorker.register(url, {scope:'/maison/'});
-    await navigator.serviceWorker.ready;
-    return reg;
-  } catch(err) {
-    window.log && window.log('SW FCM erreur: '+err.message, 'err');
-    return null;
-  }
+function getPrefs() {
+  try { return JSON.parse(localStorage.getItem('notif_prefs')||'{}'); } catch{ return {}; }
+}
+function isEnabled() { return localStorage.getItem('notif_enabled')==='1'; }
+function shouldNotifAuthor(author) {
+  if (!isEnabled()) return false;
+  const prefs = getPrefs();
+  return prefs[author] !== false; // true par défaut
 }
 
-// ── Activation des notifications ──────────────────────────
-window.enableNotifications = async function() {
-  window.log('Demande de permission…', 'info');
-  const perm = await Notification.requestPermission();
-  if (perm !== 'granted') {
-    updatePermUI('denied');
-    window.log('Permission refusée', 'err');
-    return;
-  }
-  window.log('Permission accordée ✓', 'ok');
-  try {
-    const sw = await registerFcmSW();
-    if (!sw) throw new Error('Service worker non disponible');
-
-    if (VAPID_KEY === 'YOUR_VAPID_KEY_HERE') {
-      window.log('⚠ VAPID key non configurée — voir instructions', 'err');
-      updatePermUI('no-vapid');
-      return;
-    }
-
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: sw });
-    if (!token) throw new Error('Token vide');
-
-    // Stocker le token en Firebase sous l'utilisateur
-    const user = window.currentUser || 'inconnu';
-    const deviceId = getDeviceId();
-    await set(ref(db, `maison/fcm_tokens/${user}/${deviceId}`), {
-      token, user, deviceId,
-      updatedAt: Date.now(),
-      userAgent: navigator.userAgent.slice(0,80)
+// ── Écoute nouvelles tâches/événements ───────────────
+const tasksRef = query(ref(db,'planning/tasks'), orderByChild('createdAt'), limitToLast(20));
+onValue(tasksRef, snap => {
+  if (!initialized.tasks) { initialized.tasks = true; return; } // ignore le chargement initial
+  const tasks = snap.val() || {};
+  Object.entries(tasks).forEach(([id, t]) => {
+    if (!t.createdAt || t.createdAt < startedAt) return;
+    if (t.author === window.currentUser) return; // pas de notif pour soi-même
+    if (!shouldNotifAuthor(t.author)) return;
+    const isAgenda = t.cat === 'agenda' || !!t.date;
+    const emoji = isAgenda ? '📅' : '✅';
+    const type  = isAgenda ? 'Agenda' : 'Planning';
+    const title = t.prive ? '🔒 Événement privé' : (t.title || 'Nouvel élément');
+    window.showNotif && window.showNotif({
+      title: `${emoji} ${t.author} – ${type}`,
+      body:  t.prive ? '(événement privé)' : title,
+      author: t.author,
+      tag: 'task-'+id
     });
-
-    localStorage.setItem('fcm_token', token);
-    localStorage.setItem('notif_enabled', '1');
-    document.getElementById('tokenDisplay').textContent = token;
-    window.log(`Token enregistré pour ${user}`, 'ok');
-    updatePermUI('granted');
-
-    // Écouter les messages en foreground
-    onMessage(messaging, payload => {
-      window.log('Message reçu : '+JSON.stringify(payload.notification), 'info');
-      const { title, body } = payload.notification || {};
-      new Notification(title||'Maison', { body: body||'', icon: 'data:,' });
-    });
-  } catch(err) {
-    window.log('Erreur FCM: '+err.message, 'err');
-    updatePermUI('error');
-  }
-};
-
-window.disableNotifications = async function() {
-  try {
-    await deleteToken(messaging);
-    const user = window.currentUser || 'inconnu';
-    const deviceId = getDeviceId();
-    await set(ref(db, `maison/fcm_tokens/${user}/${deviceId}`), null);
-    localStorage.removeItem('fcm_token');
-    localStorage.setItem('notif_enabled', '0');
-    updatePermUI('default');
-    window.log('Notifications désactivées', 'ok');
-  } catch(err) {
-    window.log('Erreur désactivation: '+err.message, 'err');
-  }
-};
-
-window.testNotification = function() {
-  if (Notification.permission !== 'granted') {
-    alert('Activez d\'abord les notifications ci-dessus.');
-    return;
-  }
-  new Notification('🏠 Maison Famille – test', {
-    body: 'Les notifications fonctionnent correctement ! 🎉',
-    icon: 'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏠</text></svg>'
+    window.log && window.log(`Notif tâche : ${t.author} → "${title}"`, 'ok');
   });
-  window.log('Notification test envoyée', 'ok');
-};
+});
 
-function getDeviceId() {
-  let id = localStorage.getItem('fcm_device_id');
-  if (!id) { id = 'dev_'+Math.random().toString(36).slice(2,10); localStorage.setItem('fcm_device_id', id); }
-  return id;
-}
+// ── Écoute nouveaux commentaires ─────────────────────
+const commentsRef = ref(db, 'maison/comments');
+onValue(commentsRef, snap => {
+  if (!initialized.comments) { initialized.comments = true; return; }
+  const prefs = getPrefs();
+  if (!isEnabled() || prefs.comments === false) return;
+  const all = snap.val() || {};
+  Object.entries(all).forEach(([eventId, comments]) => {
+    Object.entries(comments).forEach(([cid, c]) => {
+      if (!c.createdAt || c.createdAt < startedAt) return;
+      if (c.author === window.currentUser) return;
+      window.showNotif && window.showNotif({
+        title: `💬 ${c.author} a commenté`,
+        body:  c.text ? c.text.slice(0,80) : '',
+        author: c.author,
+        tag: 'comment-'+cid
+      });
+      window.log && window.log(`Notif commentaire : ${c.author}`, 'ok');
+    });
+  });
+});
 
-function updatePermUI(state) {
-  const row = document.getElementById('permStatus');
-  const btn = document.getElementById('btnEnable');
-  const dis  = document.getElementById('btnDisable');
-  const msgs = {
-    granted:   { cls:'ok',   icon:'✅', text:'Notifications activées', sub:'Vous recevrez les alertes sur cet appareil.' },
-    denied:    { cls:'err',  icon:'🚫', text:'Permission refusée', sub:'Allez dans les paramètres de votre navigateur pour autoriser les notifications.' },
-    default:   { cls:'info', icon:'🔔', text:'Notifications désactivées', sub:'Cliquez sur "Activer" pour recevoir les alertes.' },
-    error:     { cls:'err',  icon:'⚠️', text:'Erreur d\'activation', sub:'Vérifiez la console et la configuration VAPID.' },
-    'no-vapid':{ cls:'err',  icon:'🔧', text:'Configuration VAPID manquante', sub:'Générez une clé VAPID dans Firebase Console → Cloud Messaging et remplacez YOUR_VAPID_KEY_HERE dans ce fichier.' },
-  };
-  const m = msgs[state] || msgs.default;
-  row.className = 'status-row '+m.cls;
-  row.innerHTML = `<div class="status-icon">${m.icon}</div><div class="status-text">${m.text}<small>${m.sub}</small></div>`;
-  btn.style.display = (state === 'granted') ? 'none' : '';
-  dis.style.display = (state === 'granted') ? '' : 'none';
-}
+// ── Écoute nouveaux articles courses ─────────────────
+const coursesRef = query(ref(db,'maison/courses'), orderByChild('createdAt'), limitToLast(10));
+onValue(coursesRef, snap => {
+  if (!initialized.courses) { initialized.courses = true; return; }
+  const prefs = getPrefs();
+  if (!isEnabled() || prefs.courses === false) return;
+  const items = snap.val() || {};
+  Object.entries(items).forEach(([id, item]) => {
+    if (!item.createdAt || item.createdAt < startedAt) return;
+    if (item.addedBy === window.currentUser) return;
+    window.showNotif && window.showNotif({
+      title: `🛒 ${item.addedBy||'Quelqu\'un'} a ajouté aux courses`,
+      body:  item.name || '',
+      author: item.addedBy,
+      tag: 'course-'+id
+    });
+  });
+});
 
-// Init : vérifier l'état actuel
-(async function init() {
-  if (!('Notification' in window)) { updatePermUI('denied'); return; }
-  const enabled = localStorage.getItem('notif_enabled') === '1';
-  const perm = Notification.permission;
-  if (perm === 'granted' && enabled) {
-    updatePermUI('granted');
-    const tok = localStorage.getItem('fcm_token');
-    if (tok) document.getElementById('tokenDisplay').textContent = tok;
-  } else if (perm === 'denied') {
-    updatePermUI('denied');
-  } else {
-    updatePermUI('default');
-  }
+// Init UI
+(function checkPerm(){
+  if(!('Notification' in window)){ updatePermUI('unsupported'); return; }
+  const enabled = localStorage.getItem('notif_enabled')==='1';
+  updatePermUI(Notification.permission==='granted' && enabled ? 'granted'
+             : Notification.permission==='denied'             ? 'denied'
+             :                                                  'default');
 })();
 </script>
 </body>

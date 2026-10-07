@@ -1271,7 +1271,7 @@ async function saveEvent() {
       notes, lieu, url, prive, author, recurrence, recurrenceN, recurrenceFin,
       status: 'rdv',          // Pour qu'il apparaisse aussi dans le planning maison
       prio: 'moyenne',
-      createdAt: new Date().toISOString(),
+      createdAt: Date.now(),
     };
     if (window.fbAdd) await window.fbAdd(newEvent);
     showToast('✅ Événement ajouté');
