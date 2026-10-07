@@ -261,11 +261,37 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
 .modal p.hint { font-size: 0.78rem; color: #718096; margin-top: 6px; line-height: 1.5; }
 .modal h3 { font-size: 0.9rem; font-weight: 700; margin-top: 16px; margin-bottom: 6px; color: #2d3748; border-top: 1px solid #e2e8f0; padding-top: 14px; }
 
+/* ── Bouton flottant mobile ── */
+.fab-pm {
+  display: none;
+  position: fixed; bottom: 24px; right: 24px; z-index: 500;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #48bb78; color: white; font-size: 1.8rem; line-height: 56px; text-align: center;
+  border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(72,187,120,0.5);
+}
+
 /* ── Responsive ──────────────────────────────────────────────── */
-@media (max-width: 700px) {
-  .columns { flex-direction: column; padding: 12px; }
+@media (max-width: 768px) {
+  /* Colonnes en vertical */
+  .columns { flex-direction: column; padding: 10px; gap: 10px; padding-bottom: 80px; }
   .col { min-width: unset; }
-  .stats { padding: 10px; }
+  .stats { padding: 10px; flex-wrap: wrap; gap: 8px; }
+  .stat-box { flex: 1; min-width: 80px; padding: 10px; }
+  /* Header compact */
+  header { padding: 10px 14px; }
+  header h1 { font-size: 1.1rem; }
+  /* Bouton ajouter dans header caché → remplacé par FAB */
+  .btn-add { display: none; }
+  .fab-pm { display: block; }
+  /* Modal plein écran bas */
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal { border-radius: 20px 20px 0 0; max-height: 92vh; width: 100%; padding: 20px 16px 24px; }
+  .modal input, .modal select, .modal textarea { padding: 12px; font-size: 1rem; }
+  /* Cartes tâches plus grandes */
+  .task-card { padding: 12px 14px; }
+  .task-title { font-size: 0.95rem; }
+  /* Toast au-dessus du FAB */
+  .toast { bottom: 88px; }
 }
 
 /* Bannière rappels du jour */
@@ -434,6 +460,7 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
   </div>
 </div>
 
+<button class="fab-pm" onclick="openAdd()" title="Ajouter une tâche">＋</button>
 <div class="toast" id="toast"></div>
 
 <!-- Modal édition tâche -->

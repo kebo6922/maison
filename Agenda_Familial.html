@@ -235,11 +235,63 @@ body.dark .modal input, body.dark .modal select, body.dark .modal textarea { bac
 body.dark .assign-checks { background: #1a202c; border-color: #4a5568; }
 body.dark .btn-cancel { background: #4a5568; color: #e2e8f0; }
 
+/* ── Bouton flottant mobile ── */
+.fab {
+  display: none;
+  position: fixed; bottom: 24px; right: 24px; z-index: 500;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #805ad5; color: white; font-size: 1.8rem; line-height: 56px; text-align: center;
+  border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(128,90,213,0.5);
+}
+
+/* ── Vue liste mobile ── */
+.mobile-list { display: none; padding: 0 0 80px 0; }
+.mobile-month-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;
+}
+.mobile-month-nav h2 { font-size: 1rem; font-weight: 700; text-transform: capitalize; }
+.mobile-month-nav .nav-btns { display: flex; gap: 6px; }
+.mobile-month-nav .btn-nav { padding: 5px 12px; font-size: 0.8rem; }
+.mobile-day-group { margin: 8px 12px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; background: white; }
+.mobile-day-header {
+  padding: 8px 14px; background: #f7fafc; border-bottom: 1px solid #e2e8f0;
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+}
+.mobile-day-header.today { background: #faf5ff; border-color: #b794f4; }
+.mobile-day-num { font-size: 1.6rem; font-weight: 900; color: #2d3748; line-height: 1; }
+.mobile-day-header.today .mobile-day-num { color: #6b46c1; }
+.mobile-day-name { font-size: 0.75rem; font-weight: 700; color: #718096; text-transform: uppercase; }
+.mobile-day-header.today .mobile-day-name { color: #805ad5; }
+.mobile-event-row {
+  padding: 10px 14px; border-bottom: 1px solid #f0f0f0; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+}
+.mobile-event-row:last-child { border-bottom: none; }
+.mobile-event-row:active { background: #f7fafc; }
+.mobile-event-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.mobile-event-info { flex: 1; min-width: 0; }
+.mobile-event-title { font-size: 0.92rem; font-weight: 600; color: #2d3748; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mobile-event-meta { font-size: 0.75rem; color: #718096; margin-top: 2px; }
+.mobile-event-who { font-size: 0.72rem; padding: 2px 7px; border-radius: 10px; font-weight: 600; flex-shrink: 0; }
+
 /* ── Responsive ── */
-@media (max-width: 640px) {
-  .cal-wrap { padding: 8px; }
-  .cal-cell { min-height: 60px; }
-  .event-pill { font-size: 0.6rem; }
+@media (max-width: 768px) {
+  /* Masquer vue desktop */
+  .week-strip, .cal-nav, .legend, .cal-wrap { display: none !important; }
+  /* Afficher vue mobile */
+  .mobile-list { display: block; }
+  .fab { display: block; }
+  /* Header compact */
+  header { padding: 10px 14px; }
+  header h1 { font-size: 1.1rem; }
+  /* Modal plein écran */
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal { border-radius: 20px 20px 0 0; max-height: 92vh; padding: 20px 16px 24px; }
+  .modal input, .modal select, .modal textarea { padding: 12px; font-size: 1rem; }
+  .btn { padding: 12px 20px; font-size: 0.95rem; }
+  /* Toast au-dessus du FAB */
+  .toast { bottom: 88px; }
 }
 
 /* Bannière rappels du jour */
@@ -316,6 +368,22 @@ body.dark .btn-cancel { background: #4a5568; color: #e2e8f0; }
 <div class="cal-wrap">
   <div class="cal-grid" id="calGrid"></div>
 </div>
+
+<!-- Vue liste mobile -->
+<div class="mobile-list" id="mobileList">
+  <div class="mobile-month-nav">
+    <div class="nav-btns">
+      <button class="btn-nav" onclick="changeMonth(-1)">◀</button>
+      <button class="btn-nav btn-today" onclick="goToday()">Aujourd'hui</button>
+      <button class="btn-nav" onclick="changeMonth(1)">▶</button>
+    </div>
+    <h2 id="mobileCalTitle"></h2>
+  </div>
+  <div id="mobileDays"></div>
+</div>
+
+<!-- Bouton flottant + -->
+<button class="fab" onclick="openAdd()" title="Ajouter un événement">＋</button>
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
@@ -607,7 +675,75 @@ function eventLabel(e) {
 function renderAll() {
   renderWeekStrip();
   renderCalendar();
+  renderMobileList();
   showRappelBanner();
+}
+
+// ── Vue liste mobile ──────────────────────────────────
+function renderMobileList() {
+  const titleEl = document.getElementById('mobileCalTitle');
+  const daysEl  = document.getElementById('mobileDays');
+  if (!titleEl || !daysEl) return;
+
+  const title = new Date(viewYear, viewMonth, 1)
+    .toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  titleEl.textContent = title;
+
+  const today = toDateStr(new Date());
+  const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', autre:'#718096' };
+
+  let html = '';
+  for (let day = 1; day <= lastDay; day++) {
+    const d  = new Date(viewYear, viewMonth, day);
+    const ds = toDateStr(d);
+    const evts = eventsForDay(ds);
+    const multiEvts = getMultiDayEvents(ds).filter(e => e.date !== ds); // bandeaux (pas le jour de départ qui est déjà dans evts)
+    const allEvts = [...evts, ...multiEvts];
+    if (!allEvts.length) continue; // ne montrer que les jours avec events
+
+    const isToday = ds === today;
+    const dayNames = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+    const dayName = dayNames[d.getDay()];
+
+    html += `<div class="mobile-day-group">
+      <div class="mobile-day-header${isToday?' today':''}" onclick="openAdd('${ds}')">
+        <div class="mobile-day-num">${day}</div>
+        <div>
+          <div class="mobile-day-name">${dayName}</div>
+          <div style="font-size:0.7rem;color:#a0aec0;">${allEvts.length} événement${allEvts.length>1?'s':''}</div>
+        </div>
+      </div>`;
+
+    allEvts.forEach(e => {
+      const type = getEventType(e);
+      const color = typeColors[type] || '#718096';
+      const who = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
+      const firstWho = who[0];
+      const personC = firstWho && PERSON_COLORS[firstWho] ? PERSON_COLORS[firstWho] : null;
+      const timeStr = e.time ? `${e.time}${e.timeEnd?' → '+e.timeEnd:''}` : '';
+      const openId = e._originalId || e.id;
+      const recurIcon = e._originalId ? ' 🔁' : '';
+      const emoji = TYPE_EMOJI[type] || '📌';
+
+      html += `<div class="mobile-event-row" onclick="openEdit('${openId}')">
+        <div class="mobile-event-dot" style="background:${color};"></div>
+        <div class="mobile-event-info">
+          <div class="mobile-event-title">${emoji} ${e.title||e.label||''}${recurIcon}</div>
+          ${timeStr ? `<div class="mobile-event-meta">🕐 ${timeStr}</div>` : ''}
+        </div>
+        ${personC ? `<span class="mobile-event-who" style="background:${personC.bg};color:${personC.text};">${firstWho}</span>` : ''}
+      </div>`;
+    });
+
+    html += `</div>`;
+  }
+
+  if (!html) {
+    html = `<div style="text-align:center;padding:40px;color:#a0aec0;font-size:0.9rem;">Aucun événement ce mois</div>`;
+  }
+
+  daysEl.innerHTML = html;
 }
 
 // ── Semaine courante ──────────────────────────────────
