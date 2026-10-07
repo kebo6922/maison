@@ -221,6 +221,9 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
 .badge-cat-entretien  { background: #bee3f8; color: #1a365d; }
 .badge-cat-admin      { background: #e9d8fd; color: #44337a; }
 .badge-cat-rdv        { background: #bee3f8; color: #1a365d; }
+.badge-cat-sport      { background: #c6f6d5; color: #1a4731; }
+.badge-cat-diner      { background: #feebc8; color: #7b341e; }
+.badge-cat-sortie     { background: #e9d8fd; color: #44337a; }
 .badge-prio-haute     { background: #fed7d7; color: #9b2c2c; }
 .badge-prio-moyenne   { background: #fefcbf; color: #744210; }
 .badge-prio-basse     { background: #e2e8f0; color: #4a5568; }
@@ -336,7 +339,6 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
     <div class="online-badge" id="syncStatus">⏳ Connexion…</div>
     <select class="user-select" id="currentUser" onchange="onUserChange()">
       <option value="">👤 Qui êtes-vous ?</option>
-      <option value="">Qui êtes-vous ?</option>
     </select>
     <a href="Agenda_Familial.html" style="padding:6px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;text-decoration:none;">📅 Agenda</a>
     <button class="btn" style="background:rgba(255,255,255,0.2);color:white;font-size:0.8rem;" onclick="toggleDark()" id="darkBtn">🌙</button>
@@ -386,6 +388,9 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
       <option value="entretien">🔧 Entretien</option>
       <option value="admin">📋 Admin</option>
       <option value="rdv">📅 Rendez-vous</option>
+      <option value="sport">⚽ Sport</option>
+      <option value="diner">🍽️ Dîner</option>
+      <option value="sortie">🎭 Sortie</option>
     </select>
   </div>
 
@@ -401,6 +406,11 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
   <div style="display:flex;flex-direction:column;gap:3px;">
     <span style="font-size:0.72rem;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.04em;">Échéance</span>
     <input type="date" id="qDate" />
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:3px;min-width:180px;">
+    <span style="font-size:0.72rem;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.04em;">📍 Lieu</span>
+    <input type="text" id="qLieu" placeholder="Lieu (optionnel)" style="padding:7px 11px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.87rem;" />
   </div>
 
   <div style="display:flex;flex-direction:column;gap:3px;">
@@ -476,6 +486,9 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
       <option value="entretien">🔧 Entretien</option>
       <option value="admin">📋 Admin</option>
       <option value="rdv">📅 Rendez-vous</option>
+      <option value="sport">⚽ Sport</option>
+      <option value="diner">🍽️ Dîner</option>
+      <option value="sortie">🎭 Sortie</option>
     </select>
     <label>Priorité</label>
     <select id="editPrio" style="width:100%;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;">
@@ -503,6 +516,8 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
     <input type="number" id="editAlert" min="1" max="30" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;" />
     <label>Assigné à</label>
     <div id="editAssignChecks" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding:8px;border:1px solid #cbd5e0;border-radius:8px;background:#f7fafc;"></div>
+    <label>📍 Lieu</label>
+    <input type="text" id="editLieu" placeholder="Ex : Salle des sports, Restaurant…" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;" />
     <label>Notes</label>
     <textarea id="editNotes" rows="3" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;"></textarea>
     <div class="modal-actions">
@@ -606,7 +621,17 @@ function updateMemberSelect(membersRaw) {
   updateMemberSelect(cfg.members || defaultMembers);
 })();
 
-// User courant
+// User courant — priorité : paramètre URL ?user=Bidule → localStorage → vide
+(function() {
+  const urlUser = new URLSearchParams(window.location.search).get('user');
+  if (urlUser && ['Machin','Bidule','Bibi'].includes(urlUser)) {
+    localStorage.setItem('pmUser', urlUser);
+    // Nettoyer l'URL sans recharger
+    const url = new URL(window.location);
+    url.searchParams.delete('user');
+    history.replaceState({}, '', url);
+  }
+})();
 let currentUser = localStorage.getItem('pmUser') || '';
 if (currentUser) document.getElementById('currentUser').value = currentUser;
 
@@ -709,7 +734,7 @@ function render() {
       `<button class="btn-sm btn-move" onclick="moveTask('${t.id}','${m.s}')">${m.l}</button>`
     ).join('');
 
-    const catLabel = { bricolage:'🔨 Bricolage', jardin:'🌿 Jardin', entretien:'🔧 Entretien', admin:'📋 Admin', rdv:'📅 Rendez-vous' }[t.cat] || t.cat;
+    const catLabel = { bricolage:'🔨 Bricolage', jardin:'🌿 Jardin', entretien:'🔧 Entretien', admin:'📋 Admin', rdv:'📅 Rendez-vous', sport:'⚽ Sport', diner:'🍽️ Dîner', sortie:'🎭 Sortie' }[t.cat] || t.cat;
     const prioLabel = { haute:'🔴 Haute', moyenne:'🟡 Moy.', basse:'🟢 Basse' }[t.prio] || t.prio;
 
     // Couleur de fond = personne assignée (pour tous, planning ET agenda)
@@ -755,6 +780,7 @@ function render() {
       </div>
       ${rdvDateHtml}
       ${dlHtml}
+      ${t.lieu ? `<div style="font-size:0.72rem;color:#4a5568;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ${t.lieu}</div>` : ''}
       ${t.notes ? `<div onclick="this.style.whiteSpace=this.style.whiteSpace==='normal'?'nowrap':'normal'" title="Cliquer pour lire" style="font-size:0.72rem;color:#718096;margin-top:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;" >📝 ${t.notes}</div>` : ''}
       <div class="task-actions">${moveBtns}<button class="btn-sm" style="background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8;" onclick="openEdit('${t.id}')">✏ Modifier</button><button class="btn-sm btn-del" onclick="deleteTask('${t.id}')">✕</button></div>`;
 
@@ -824,6 +850,7 @@ async function quickAdd() {
     status:    qCat === 'rdv' ? 'rdv' : 'todo',
     date:      document.getElementById('qDate').value,
     alertDays: parseInt(document.getElementById('qAlert').value) || 7,
+    lieu:      document.getElementById('qLieu').value.trim(),
     notes:     '',
     createdAt: new Date().toISOString(),
   };
@@ -838,6 +865,7 @@ async function quickAdd() {
 
   document.getElementById('qTitle').value = '';
   document.getElementById('qDate').value  = '';
+  document.getElementById('qLieu').value  = '';
   document.querySelectorAll('#qAssignChecks input[type=checkbox]').forEach(cb => cb.checked = false);
   toast('✅ Tâche ajoutée !');
 }
@@ -1226,6 +1254,7 @@ function openEdit(id) {
   document.getElementById('editPrio').value   = t.prio  || 'moyenne';
   document.getElementById('editDate').value   = t.date  || '';
   document.getElementById('editAlert').value  = t.alertDays || 7;
+  document.getElementById('editLieu').value   = t.lieu   || '';
   document.getElementById('editNotes').value  = t.notes  || '';
   setEditTime('editTimeH','editTimeM', t.time || '');
   setEditTime('editTimeEndH','editTimeEndM', t.timeEnd || '');
@@ -1274,6 +1303,7 @@ async function saveEdit() {
     time:      getEditTime('editTimeH','editTimeM'),
     timeEnd:   getEditTime('editTimeEndH','editTimeEndM'),
     alertDays: parseInt(document.getElementById('editAlert').value) || 7,
+    lieu:      document.getElementById('editLieu').value.trim(),
     author:    [...document.querySelectorAll('#editAssignChecks input[type=checkbox]:checked')].map(cb => cb.value).join(', ') || '',
     notes:     document.getElementById('editNotes').value.trim(),
     status:    newStatus,

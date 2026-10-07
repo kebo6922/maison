@@ -203,9 +203,13 @@ header h1 { font-size: 1.4rem; font-weight: 700; }
   text-transform: none; letter-spacing: 0; }
 
 /* ── Types d'événements : fond semi-transparent + bordure gauche colorée ── */
-.type-sport    { border-color: #38a169; color: #1a4731; background: #c6f6d5; }
-.type-diner    { border-color: #e07b39; color: #7b341e; background: #feebc8; }
-.type-sortie   { border-color: #9b59d0; color: #5a1e6e; background: #e9d8fd; }
+.type-sport      { border-color: #38a169; color: #1a4731; background: #c6f6d5; }
+.type-diner      { border-color: #e07b39; color: #7b341e; background: #feebc8; }
+.type-sortie     { border-color: #9b59d0; color: #5a1e6e; background: #e9d8fd; }
+.type-bricolage  { border-color: #c05621; color: #7b341e; background: #feebc8; }
+.type-jardin     { border-color: #276749; color: #1a4731; background: #c6f6d5; }
+.type-entretien  { border-color: #2b6cb0; color: #1a365d; background: #bee3f8; }
+.type-admin      { border-color: #6b46c1; color: #44337a; background: #e9d8fd; }
 .type-rdv      { border-color: #3182ce; color: #1a365d; background: #bee3f8; }
 .type-autre    { border-color: #718096; color: #2d3748; background: #edf2f7; }
 
@@ -331,6 +335,13 @@ body.dark .btn-cancel { background: #4a5568; color: #e2e8f0; }
   <h1>📅 Agenda Familial</h1>
   <div class="header-right">
     <a class="link-planning" href="Planning_Maison_Partage.html">🏠 Planning maison</a>
+    <select id="agUserSelect" onchange="onAgUserChange()"
+      style="padding:5px 10px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.82rem;font-weight:600;cursor:pointer;outline:none;">
+      <option value="" style="color:#1a202c;">👤 Qui êtes-vous ?</option>
+      <option value="Machin" style="color:#1a202c;">Machin</option>
+      <option value="Bidule" style="color:#1a202c;">Bidule</option>
+      <option value="Bibi" style="color:#1a202c;">Bibi</option>
+    </select>
     <button class="btn-hdr" onclick="toggleDark()" id="darkBtn">🌙</button>
   </div>
 </header>
@@ -358,9 +369,13 @@ body.dark .btn-cancel { background: #4a5568; color: #e2e8f0; }
 <div class="legend">
   <span style="font-size:0.7rem;color:#718096;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-right:4px;">Type :</span>
   <div class="leg-item"><div class="leg-dot" style="background:#38a169;border-radius:2px;"></div> Sport</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#e07b39;border-radius:2px;"></div> Dîner / Invitation</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#e07b39;border-radius:2px;"></div> Dîner</div>
   <div class="leg-item"><div class="leg-dot" style="background:#9b59d0;border-radius:2px;"></div> Sortie</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#3182ce;border-radius:2px;"></div> RDV (planning)</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#3182ce;border-radius:2px;"></div> RDV</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#c05621;border-radius:2px;"></div> Bricolage</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#276749;border-radius:2px;"></div> Jardin</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#2b6cb0;border-radius:2px;"></div> Entretien</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#6b46c1;border-radius:2px;"></div> Admin</div>
   <div class="leg-item"><div class="leg-dot" style="background:#718096;border-radius:2px;"></div> Autre</div>
 </div>
 
@@ -440,6 +455,10 @@ body.dark .btn-cancel { background: #4a5568; color: #e2e8f0; }
       <option value="diner">🍽️ Dîner / Invitation</option>
       <option value="sortie">🎉 Sortie</option>
       <option value="rdv">📅 Rendez-vous</option>
+      <option value="bricolage">🔨 Bricolage</option>
+      <option value="jardin">🌿 Jardin</option>
+      <option value="entretien">🔧 Entretien</option>
+      <option value="admin">📋 Admin</option>
       <option value="autre">📌 Autre</option>
     </select>
 
@@ -472,8 +491,11 @@ body.dark .btn-cancel { background: #4a5568; color: #e2e8f0; }
     <label>Participants</label>
     <div class="assign-checks" id="assignChecks"></div>
 
+    <label>📍 Lieu</label>
+    <input type="text" id="evLieu" placeholder="Ex : Salle des sports, Restaurant Le Moulin…" />
+
     <label>Notes</label>
-    <textarea id="evNotes" rows="2" placeholder="Détails, adresse…"></textarea>
+    <textarea id="evNotes" rows="2" placeholder="Informations complémentaires…"></textarea>
 
     <div class="modal-actions">
       <button class="btn btn-delete" id="btnDelete" onclick="deleteEvent()" style="display:none;">🗑 Supprimer</button>
@@ -494,15 +516,32 @@ const PERSON_COLORS = {
   'Bibi':   { bg: '#c6f6d5', text: '#1a4731', border: '#68d391' },
 };
 const TYPE_CLASS = {
-  sport:  'type-sport',
-  diner:  'type-diner',
-  sortie: 'type-sortie',
+  sport:     'type-sport',
+  diner:     'type-diner',
+  sortie:    'type-sortie',
+  bricolage: 'type-bricolage',
+  jardin:    'type-jardin',
+  entretien: 'type-entretien',
+  admin:     'type-admin',
   rdv:    'type-rdv',
   autre:  'type-autre',
 };
 const TYPE_EMOJI = {
-  sport:'🏃', diner:'🍽️', sortie:'🎉', rdv:'📅', autre:'📌'
+  sport:'🏃', diner:'🍽️', sortie:'🎉', rdv:'📅',
+  bricolage:'🔨', jardin:'🌿', entretien:'🔧', admin:'📋', autre:'📌'
 };
+
+// ── Profil utilisateur — priorité : URL ?user=Bidule → localStorage ──
+(function() {
+  const urlUser = new URLSearchParams(window.location.search).get('user');
+  if (urlUser && ['Machin','Bidule','Bibi'].includes(urlUser)) {
+    localStorage.setItem('pmUser', urlUser);
+    const url = new URL(window.location);
+    url.searchParams.delete('user');
+    history.replaceState({}, '', url);
+  }
+})();
+let currentUser = localStorage.getItem('pmUser') || '';
 
 // ── État ──────────────────────────────────────────────
 let viewYear, viewMonth;
@@ -512,6 +551,14 @@ let darkMode = localStorage.getItem('pmDark') === '1';
 // Synchroniser dark mode avec le planning maison (même clé localStorage)
 if (darkMode) document.body.classList.add('dark');
 document.getElementById('darkBtn').textContent = darkMode ? '☀️' : '🌙';
+
+// Appliquer le profil au sélecteur header
+if (currentUser) document.getElementById('agUserSelect').value = currentUser;
+
+function onAgUserChange() {
+  currentUser = document.getElementById('agUserSelect').value;
+  localStorage.setItem('pmUser', currentUser);
+}
 
 function toggleDark() {
   darkMode = !darkMode;
@@ -631,7 +678,7 @@ function buildMultiDayBanners(ds) {
   const multiEvts = getMultiDayEvents(ds);
   if (!multiEvts.length) return '';
   return multiEvts.map(e => {
-    const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', autre:'#718096' };
+    const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', autre:'#718096' };
     const typeColor = typeColors[getEventType(e)] || '#718096';
     // Fond = couleur de la personne (comme les pills), bordure gauche = couleur du type
     const firstAuthor = (e.author||'').split(',')[0].trim();
@@ -691,7 +738,7 @@ function renderMobileList() {
 
   const today = toDateStr(new Date());
   const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', autre:'#718096' };
+  const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', autre:'#718096' };
 
   let html = '';
   for (let day = 1; day <= lastDay; day++) {
@@ -731,6 +778,7 @@ function renderMobileList() {
         <div class="mobile-event-info">
           <div class="mobile-event-title">${emoji} ${e.title||e.label||''}${recurIcon}</div>
           ${timeStr ? `<div class="mobile-event-meta">🕐 ${timeStr}</div>` : ''}
+          ${e.lieu ? `<div class="mobile-event-meta">📍 ${e.lieu}</div>` : ''}
         </div>
         ${personC ? `<span class="mobile-event-who" style="background:${personC.bg};color:${personC.text};">${firstWho}</span>` : ''}
       </div>`;
@@ -919,8 +967,9 @@ function openAdd(dateStr) {
   setTimePicker('evTimeH','evTimeM','');
   setTimePicker('evTimeEndH','evTimeEndM','');
   document.getElementById('evNotes').value = '';
+  document.getElementById('evLieu').value = '';
   document.getElementById('btnDelete').style.display = 'none';
-  buildAssignChecks([]);
+  buildAssignChecks(currentUser ? [currentUser] : []);
   document.getElementById('modalOverlay').style.display = 'flex';
   setTimeout(() => document.getElementById('evTitle').focus(), 100);
 }
@@ -944,6 +993,7 @@ function openEdit(id) {
   setTimePicker('evTimeH','evTimeM', e.time    || '');
   setTimePicker('evTimeEndH','evTimeEndM', e.timeEnd || '');
   document.getElementById('evNotes').value = e.notes || '';
+  document.getElementById('evLieu').value = e.lieu || '';
   document.getElementById('btnDelete').style.display = 'inline-block';
 
   const assigned = (e.author || '').split(',').map(n => n.trim()).filter(Boolean);
@@ -972,6 +1022,7 @@ async function saveEvent() {
   const recurrenceN   = parseInt(document.getElementById('evRecurrenceN').value) || 3;
   const recurrenceFin = document.getElementById('evRecurrenceFin').value;
   const notes  = document.getElementById('evNotes').value.trim();
+  const lieu   = document.getElementById('evLieu').value.trim();
   const author = [...document.querySelectorAll('#assignChecks input[type=checkbox]:checked')]
                    .map(cb => cb.value).join(', ');
 
@@ -982,8 +1033,8 @@ async function saveEvent() {
     const existing = window._tasks[editId];
     const isFromPlanning = existing && existing.cat !== 'agenda';
     const updateData = isFromPlanning
-      ? { title, date, dateFin, time, timeEnd, notes, author, recurrence, recurrenceN, recurrenceFin, cat: type === 'rdv' ? 'rdv' : existing.cat }
-      : { title, date, dateFin, time, timeEnd, type: type, evType: type, notes, author, recurrence, recurrenceN, recurrenceFin };
+      ? { title, date, dateFin, time, timeEnd, notes, lieu, author, recurrence, recurrenceN, recurrenceFin, cat: type === 'rdv' ? 'rdv' : existing.cat }
+      : { title, date, dateFin, time, timeEnd, type: type, evType: type, notes, lieu, author, recurrence, recurrenceN, recurrenceFin };
     if (window.fbUpdate) await window.fbUpdate(editId, updateData);
     showToast('✅ Événement mis à jour');
   } else {
@@ -993,7 +1044,7 @@ async function saveEvent() {
       cat: 'agenda',
       type: type,
       evType: type,
-      notes, author, recurrence, recurrenceN, recurrenceFin,
+      notes, lieu, author, recurrence, recurrenceN, recurrenceFin,
       status: 'rdv',          // Pour qu'il apparaisse aussi dans le planning maison
       prio: 'moyenne',
       createdAt: new Date().toISOString(),
@@ -1039,7 +1090,7 @@ function showRappelBanner() {
   const evtsTomorrow = eventsForDay(tomorrowStr);
   if (!evtsToday.length && !evtsTomorrow.length) return;
 
-  const TYPE_EMOJI_LOCAL = { sport:'⚽', diner:'🍽️', sortie:'🎉', rdv:'📅', autre:'📌' };
+  const TYPE_EMOJI_LOCAL = { sport:'🏃', diner:'🍽️', sortie:'🎉', rdv:'📅', bricolage:'🔨', jardin:'🌿', entretien:'🔧', admin:'📋', autre:'📌' };
   const fmt2 = (label, evts) => evts.map(e => {
     const em = TYPE_EMOJI_LOCAL[getEventType(e)] || '📌';
     const h  = e.time ? ` ${e.time}` : '';
