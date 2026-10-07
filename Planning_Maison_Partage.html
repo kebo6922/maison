@@ -337,9 +337,7 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
   </div>
   <div class="header-right">
     <div class="online-badge" id="syncStatus">⏳ Connexion…</div>
-    <select class="user-select" id="currentUser" onchange="onUserChange()">
-      <option value="">👤 Qui êtes-vous ?</option>
-    </select>
+    <span id="pmUserBadge" style="padding:5px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.82rem;font-weight:600;">👤 ?</span>
     <a href="Agenda_Familial.html" style="padding:6px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;text-decoration:none;">📅 Agenda</a>
     <button class="btn" style="background:rgba(255,255,255,0.2);color:white;font-size:0.8rem;" onclick="toggleDark()" id="darkBtn">🌙</button>
     <button class="btn" style="background:rgba(255,255,255,0.2);color:white;font-size:0.8rem;" onclick="openConfig()">⚙ Config</button>
@@ -348,7 +346,7 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
 
 <div class="stats">
   <div class="stat-card s-total"><div class="num" id="statTotal">–</div><div class="lbl">Total</div></div>
-  <div class="stat-card s-urgent"><div class="num" id="statUrgent">–</div><div class="lbl">Priorité haute</div></div>
+  <div class="stat-card s-urgent" onclick="setPrioFilter('haute')" title="Cliquer pour filtrer" style="cursor:pointer;"><div class="num" id="statUrgent">–</div><div class="lbl">Priorité haute</div></div>
   <div class="stat-card s-prog"><div class="num" id="statProg">–</div><div class="lbl">En cours</div></div>
   <div class="stat-card s-done"><div class="num" id="statDone">–</div><div class="lbl">Terminées</div></div>
   <div class="stat-card" style="border-top:3px solid #90cdf4;"><div class="num" id="statRdv" style="color:#2b6cb0;">–</div><div class="lbl">RDV à venir</div></div>
@@ -577,6 +575,7 @@ Bibi:abbigaelancel@gmail.com</textarea>
 window._tasks = {};  // rempli par Firebase onValue
 let dragId = null;
 let activeFilter = ''; // filtre personne actif
+let activePrioFilter = ''; // filtre priorité actif
 let darkMode = localStorage.getItem('pmDark') === '1';
 if (darkMode) document.body.classList.add('dark');
 
@@ -584,21 +583,12 @@ if (darkMode) document.body.classList.add('dark');
 let cfg = JSON.parse(localStorage.getItem('pmConfig') || '{}');
 
 function updateMemberSelect(membersRaw) {
-  const sel = document.getElementById('currentUser');
-  if (!sel) return;
   const current = localStorage.getItem('pmUser') || '';
-  sel.innerHTML = '<option value="">👤 Qui êtes-vous ?</option>';
   const checksWrap = document.getElementById('qAssignChecks');
   if (checksWrap) checksWrap.innerHTML = '';
   (membersRaw || '').split('\n').forEach(line => {
     const name = line.split(':')[0].trim();
     if (!name) return;
-    // Menu déroulant "Qui êtes-vous"
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    if (name === current) opt.selected = true;
-    sel.appendChild(opt);
     // Cases à cocher "Assigner à"
     if (checksWrap) {
       const lbl = document.createElement('label');
@@ -633,12 +623,12 @@ function updateMemberSelect(membersRaw) {
   }
 })();
 let currentUser = localStorage.getItem('pmUser') || '';
-if (currentUser) document.getElementById('currentUser').value = currentUser;
 
-function onUserChange() {
-  currentUser = document.getElementById('currentUser').value;
-  localStorage.setItem('pmUser', currentUser);
+function updatePmUserBadge() {
+  const badge = document.getElementById('pmUserBadge');
+  if (badge) badge.textContent = currentUser ? '👤 ' + currentUser : '👤 ?';
 }
+updatePmUserBadge();
 
 // Date
 const now = new Date();
@@ -684,6 +674,8 @@ function render() {
 
   // Filtre par personne
   if (activeFilter) tasks = tasks.filter(t => (t.author||'').split(',').map(n=>n.trim()).includes(activeFilter));
+  // Filtre par priorité
+  if (activePrioFilter) tasks = tasks.filter(t => t.prio === activePrioFilter);
 
   // Tri général (hors RDV) : en retard, puis priorité, puis date
   const po = { haute:0, moyenne:1, basse:2 };
@@ -1213,11 +1205,11 @@ function getCardBackground(author) {
   const colors = names.map(n => (PERSON_COLORS[n] || { bg: '#e2e8f0' }).bg);
   const borders = names.map(n => (PERSON_COLORS[n] || { border: '#cbd5e0' }).border);
   if (colors.length === 2) {
-    return `background:linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%);border:1px solid ${borders[0]};`;
+    return `background:linear-gradient(135deg, ${colors[0]} 0%, ${colors[0]} 45%, ${colors[1]} 55%, ${colors[1]} 100%);border:1px solid ${borders[0]};color:#2d3748;`;
   }
   const pct = 100 / colors.length;
   const stops = colors.map((c, i) => `${c} ${Math.round(i*pct)}%, ${c} ${Math.round((i+1)*pct)}%`).join(', ');
-  return `background:linear-gradient(135deg, ${stops});border:1px solid ${borders[0]};`;
+  return `background:linear-gradient(135deg, ${stops});border:1px solid ${borders[0]};color:#2d3748;`;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1527,6 +1519,13 @@ function buildFilterButtons() {
 
 function setFilter(name) {
   activeFilter = name;
+  render();
+}
+
+function setPrioFilter(prio) {
+  activePrioFilter = activePrioFilter === prio ? '' : prio; // toggle
+  const card = document.querySelector('.stat-card.s-urgent');
+  if (card) card.style.outline = activePrioFilter ? '3px solid #e53e3e' : 'none';
   render();
 }
 

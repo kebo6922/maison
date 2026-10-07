@@ -509,6 +509,29 @@ const PERSON_COLORS = {
   'Bidule': { bg: '#fc8181', text: '#742a2a', border: '#e53e3e' },
   'Bibi':   { bg: '#c6f6d5', text: '#1a4731', border: '#68d391' },
 };
+
+// Retourne le style de fond pour un auteur (1 ou plusieurs personnes)
+function getPersonStyle(author) {
+  if (!author) return { bg: '#edf2f7', text: '#2d3748', border: '#e2e8f0', gradient: false };
+  const names = author.split(',').map(n => n.trim()).filter(Boolean);
+  if (names.length === 1) {
+    const c = PERSON_COLORS[names[0]];
+    return c ? { bg: c.bg, text: c.text, border: c.border, gradient: false }
+             : { bg: '#edf2f7', text: '#2d3748', border: '#e2e8f0', gradient: false };
+  }
+  const colors  = names.map(n => (PERSON_COLORS[n] || { bg: '#edf2f7' }).bg);
+  const borders = names.map(n => (PERSON_COLORS[n] || { border: '#e2e8f0' }).border);
+  let bgStyle;
+  if (colors.length === 2) {
+    bgStyle = `linear-gradient(135deg, ${colors[0]} 0%, ${colors[0]} 45%, ${colors[1]} 55%, ${colors[1]} 100%)`;
+  } else {
+    const pct = 100 / colors.length;
+    const stops = colors.map((c, i) => `${c} ${Math.round(i*pct)}%, ${c} ${Math.round((i+1)*pct)}%`).join(', ');
+    bgStyle = `linear-gradient(135deg, ${stops})`;
+  }
+  return { bg: bgStyle, text: '#2d3748', border: borders[0], gradient: true };
+}
+
 const TYPE_CLASS = {
   sport:     'type-sport',
   diner:     'type-diner',
@@ -673,11 +696,11 @@ function buildMultiDayBanners(ds) {
   return multiEvts.map(e => {
     const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', autre:'#718096' };
     const typeColor = typeColors[getEventType(e)] || '#718096';
-    // Fond = couleur de la personne (comme les pills), bordure gauche = couleur du type
-    const firstAuthor = (e.author||'').split(',')[0].trim();
-    const personC = PERSON_COLORS[firstAuthor];
-    const bgColor  = personC ? personC.bg    : '#edf2f7';
-    const txtColor = personC ? personC.text  : '#2d3748';
+    // Fond = couleur de la/les personne(s), bordure gauche = couleur du type
+    const personS  = getPersonStyle(e.author);
+    const bgColor  = personS.gradient ? personS.bg : personS.bg;
+    const bgProp   = personS.gradient ? 'background' : 'background';
+    const txtColor = personS.text;
     const isStart = ds === e.date;
     const isEnd   = ds === e.dateFin;
     const who = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean).join(', ');
@@ -760,21 +783,22 @@ function renderMobileList() {
       const color = typeColors[type] || '#718096';
       const who = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
       const firstWho = who[0];
-      const personC = firstWho && PERSON_COLORS[firstWho] ? PERSON_COLORS[firstWho] : null;
+      const personS = getPersonStyle(e.author);
       const timeStr = e.time ? `${e.time}${e.timeEnd?' → '+e.timeEnd:''}` : '';
       const openId = e._originalId || e.id;
       const recurIcon = e._originalId ? ' 🔁' : '';
       const emoji = TYPE_EMOJI[type] || '📌';
 
-      const mobileBg   = personC ? personC.bg   : '#f7fafc';
-      const mobileText = personC ? personC.text : '#2d3748';
+      const mobileBg   = personS.bg;
+      const mobileText = personS.text;
+      const whoLabel = who.join(', ');
       html += `<div class="mobile-event-row" onclick="openEdit('${openId}')" style="background:${mobileBg};border-left:4px solid ${color};">
         <div class="mobile-event-info">
           <div class="mobile-event-title" style="color:${mobileText};">${emoji} ${e.title||e.label||''}${recurIcon}</div>
           ${timeStr ? `<div class="mobile-event-meta" style="color:${mobileText};opacity:0.75;">🕐 ${timeStr}</div>` : ''}
           ${e.lieu ? `<div class="mobile-event-meta" style="color:${mobileText};opacity:0.75;">📍 ${e.lieu}</div>` : ''}
         </div>
-        ${firstWho ? `<span class="mobile-event-who" style="background:rgba(0,0,0,0.12);color:${mobileText};font-weight:700;">${firstWho}</span>` : ''}
+        ${whoLabel ? `<span class="mobile-event-who" style="background:rgba(0,0,0,0.12);color:${mobileText};font-weight:700;">${whoLabel}</span>` : ''}
       </div>`;
     });
 
@@ -809,10 +833,9 @@ function renderWeekStrip() {
     let evHtml = evts.slice(0, 3).map(e => {
       const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', autre:'#718096' };
       const typeColor = typeColors[getEventType(e)] || '#718096';
-      const firstAuthor = (e.author || '').split(',')[0].trim();
-      const personC = PERSON_COLORS[firstAuthor];
-      const chipBg   = personC ? personC.bg   : '#edf2f7';
-      const chipText = personC ? personC.text : '#2d3748';
+      const personS  = getPersonStyle(e.author);
+      const chipBg   = personS.bg;
+      const chipText = personS.text;
       const openId = e._originalId || e.id;
       const recurIcon = e._originalId ? ' 🔁' : '';
       return `<div class="week-event-chip" style="background:${chipBg};color:${chipText};border-left:3px solid ${typeColor};" onclick="openEdit('${openId}')" title="${e.title||e.label||''}">${eventLabel(e)}${recurIcon}</div>`;
@@ -888,14 +911,13 @@ function buildCell(d, ds, otherMonth, isToday, evts) {
   let evHtml = evts.slice(0, 3).map(e => {
     const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', autre:'#718096' };
     const typeColor = typeColors[getEventType(e)] || '#718096';
-    const firstAuthor = (e.author || '').split(',')[0].trim();
-    const personC = PERSON_COLORS[firstAuthor];
-    const pillBg   = personC ? personC.bg   : '#edf2f7';
-    const pillText = personC ? personC.text : '#2d3748';
+    const personS  = getPersonStyle(e.author);
+    const pillBg   = personS.bg;
+    const pillText = personS.text;
     const who = (e.author || '').split(',').map(n => n.trim()).filter(Boolean).join(', ');
     const openId = e._originalId || e.id;
     const recurIcon = e._originalId ? ' 🔁' : '';
-    return `<div class="event-pill" style="display:flex;justify-content:space-between;gap:6px;background:${pillBg};color:${pillText};border-left:3px solid ${typeColor};border-color:${typeColor}44;" onclick="event.stopPropagation();openEdit('${openId}')">
+    return `<div class="event-pill" style="display:flex;justify-content:space-between;gap:6px;background:${pillBg};color:${pillText};border-left:3px solid ${typeColor};" onclick="event.stopPropagation();openEdit('${openId}')">
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${eventLabel(e)}${recurIcon}</span>
       ${who ? `<span style="flex-shrink:0;opacity:0.8;font-weight:600;">${who}</span>` : ''}
     </div>`;
