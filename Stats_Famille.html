@@ -275,7 +275,7 @@ function computeStats() {
       if (!p) return;
       p.total++;
       if (item.status === 'done') p.done++;
-      else if (item.status === 'inprog') p.inprog++;
+      else if (item.status === 'inprog' || item.status === 'progress') p.inprog++;
       else p.todo++;
       const cat = item.cat || 'autre';
       p.cats[cat] = (p.cats[cat] || 0) + 1;
