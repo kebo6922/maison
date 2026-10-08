@@ -993,7 +993,7 @@ function renderMobileList() {
       const mobileBg   = personS.bg;
       const mobileText = personS.text;
       const whoLabel = who.join(', ');
-      const isOwnerM = who.includes(currentUser) || e.createdBy === currentUser;
+      const isOwnerM = who.includes(currentUser) || e.createdBy === currentUser || !e.createdBy;
       const mobileTitle = (e.prive && !isOwnerM) ? '🔒 Privé' : (e.title||e.label||'');
       const mobileClick = (e.prive && !isOwnerM) ? '' : `onclick="openEdit('${openId}')"`;
       html += `<div class="mobile-event-row" ${mobileClick} style="background:${mobileBg};border-left:4px solid ${color};${(e.prive&&!isOwnerM)?'cursor:default;':''}">
@@ -1044,7 +1044,7 @@ function renderWeekStrip() {
       const openId = e._originalId || e.id;
       const recurIcon = e._originalId ? ' 🔁' : '';
       const weekOwners = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
-      const weekIsOwner = !e.prive || weekOwners.includes(currentUser) || e.createdBy === currentUser;
+      const weekIsOwner = !e.prive || weekOwners.includes(currentUser) || e.createdBy === currentUser || !e.createdBy;
       const weekClick = weekIsOwner ? `onclick="openEdit('${openId}')"` : '';
       const weekTitle = (e.prive && !weekIsOwner) ? '🔒 Privé' : (e.title||e.label||'');
       return `<div class="week-event-chip" style="background:${chipBg};color:${chipText};border-left:3px solid ${typeColor};${e.prive&&!weekIsOwner?'cursor:default;':''}" ${weekClick} title="${weekTitle}">${eventLabel(e)}${recurIcon}</div>`;
@@ -1127,7 +1127,7 @@ function buildCell(d, ds, otherMonth, isToday, evts) {
     const openId = e._originalId || e.id;
     const recurIcon = e._originalId ? ' 🔁' : '';
     const pillOwners = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
-    const pillIsOwner = !e.prive || pillOwners.includes(currentUser) || e.createdBy === currentUser;
+    const pillIsOwner = !e.prive || pillOwners.includes(currentUser) || e.createdBy === currentUser || !e.createdBy;
     const pillClick = pillIsOwner ? `onclick="event.stopPropagation();openEdit('${openId}')"` : 'onclick="event.stopPropagation()"';
     return `<div class="event-pill" style="display:flex;justify-content:space-between;gap:6px;background:${pillBg};color:${pillText};border-left:3px solid ${typeColor};${e.prive&&!pillIsOwner?'cursor:default;':''}" ${pillClick}>
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${eventLabel(e)}${recurIcon}</span>
@@ -1222,11 +1222,13 @@ function openEdit(id) {
   // Bloquer l'édition si on n'est pas l'auteur
   const owners = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
   const isCreator = e.createdBy === currentUser;
+  const hasCreator = !!e.createdBy;
   if (e.prive && !owners.includes(currentUser) && !isCreator) {
     showToast('🔒 Cet événement est privé');
     return;
   }
-  if (currentUser && owners.length > 0 && !owners.includes(currentUser) && !isCreator) {
+  // Bloquer seulement si l'événement a un createdBy ET que tu n'es ni auteur ni créateur
+  if (hasCreator && currentUser && owners.length > 0 && !owners.includes(currentUser) && !isCreator) {
     showToast('🔒 Seul(e) ' + owners.join(' ou ') + ' peut modifier cet événement');
     return;
   }
@@ -1271,7 +1273,7 @@ function openDayPopup(ds) {
     const who = (e.author || '').split(',').map(n => n.trim()).filter(Boolean).join(', ');
     const openId = e._originalId || e.id;
     const owners = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
-    const isOwner = !e.prive || owners.includes(currentUser) || e.createdBy === currentUser;
+    const isOwner = !e.prive || owners.includes(currentUser) || e.createdBy === currentUser || !e.createdBy;
     const clickable = isOwner ? `onclick="closeDayPopup();openEdit('${openId}')"` : '';
     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px;border-radius:8px;background:${personS.bg};color:${personS.text};border-left:4px solid ${typeColor};cursor:${isOwner?'pointer':'default'};" ${clickable}>
       <span style="font-size:0.88rem;font-weight:600;">${eventLabel(e)}</span>
