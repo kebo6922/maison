@@ -175,13 +175,23 @@ if (localStorage.getItem(AUTH_KEY) !== AUTH_PWD) {
 const MEMBERS = ['Machin','Bidule','Bibi'];
 let currentUser = null;
 function loadProfile() {
-  try { const p = JSON.parse(localStorage.getItem('pmUser')||'null'); if (p?.name) currentUser = p.name; } catch(e){}
+  try {
+    const raw = localStorage.getItem('pmUser');
+    if (raw) {
+      // Les autres pages stockent une chaîne simple "Machin"
+      const p = JSON.parse(raw);
+      currentUser = typeof p === 'string' ? p : (p?.name || null);
+    }
+  } catch(e) { currentUser = localStorage.getItem('pmUser') || null; }
   renderProfile();
 }
 const COLORS = {
   Machin:{bg:'#bee3f8',text:'#1a365d'}, Bidule:{bg:'#fc8181',text:'#742a2a'}, Bibi:{bg:'#c6f6d5',text:'#1a4731'}
 };
 function renderProfile() {
+  // Mettre à jour le badge dans le header
+  const badge = document.getElementById('notifUserBadge');
+  if (badge) badge.textContent = currentUser ? '👤 ' + currentUser[0].toUpperCase() : '👤 ?';
   const el = document.getElementById('profileInfo'); if (!el) return;
   if (currentUser) {
     const c = COLORS[currentUser]||{bg:'#e2e8f0',text:'#2d3748'};
@@ -218,7 +228,7 @@ function switchProfile() {
   if(c==='0'){currentUser=null;localStorage.removeItem('pmUser');renderProfile();return;}
   const m={'1':'Machin','2':'Bidule','3':'Bibi'}; const name=m[c];
   if(!name){alert('Choix invalide');return;}
-  checkOrSetupPin(name,()=>{currentUser=name;localStorage.setItem('pmUser',JSON.stringify({name}));renderProfile();});
+  checkOrSetupPin(name,()=>{currentUser=name;localStorage.setItem('pmUser',JSON.stringify(name));renderProfile();});
 }
 loadProfile();
 
