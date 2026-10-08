@@ -458,6 +458,15 @@ self.addEventListener('fetch',e=>{
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<!-- Popup "tous les événements du jour" -->
+<div class="modal-overlay" id="dayPopupOverlay" style="display:none;" onclick="if(event.target===this)closeDayPopup()">
+  <div class="modal" style="max-width:380px;max-height:80vh;overflow-y:auto;">
+    <h2 id="dayPopupTitle" style="margin-bottom:12px;"></h2>
+    <div id="dayPopupList"></div>
+    <button class="btn-hdr" onclick="closeDayPopup()" style="margin-top:14px;width:100%;padding:10px;border-radius:10px;background:#667eea;color:#fff;border:none;font-size:0.95rem;cursor:pointer;">Fermer</button>
+  </div>
+</div>
+
 <!-- Modal ajout / édition -->
 <div class="modal-overlay" id="modalOverlay" style="display:none;">
   <div class="modal">
@@ -1125,7 +1134,7 @@ function buildCell(d, ds, otherMonth, isToday, evts) {
       ${who ? `<span style="flex-shrink:0;opacity:0.8;font-weight:600;">${who}</span>` : ''}
     </div>`;
   }).join('');
-  if (evts.length > 3) evHtml += `<div class="more-badge">+${evts.length-3} autres</div>`;
+  if (evts.length > 3) evHtml += `<div class="more-badge" onclick="event.stopPropagation();openDayPopup('${ds}')" style="cursor:pointer;">+${evts.length-3} autres</div>`;
 
   return `<div class="${cls}" onclick="if(event.target.closest('.event-pill,.more-badge'))return;openAdd('${ds}')">
     <div class="day-num">${d.getDate()}</div>
@@ -1246,6 +1255,34 @@ function openEdit(id) {
   document.getElementById('commentsSection').style.display = 'block';
   loadComments(id);
   document.getElementById('modalOverlay').style.display = 'flex';
+}
+
+function openDayPopup(ds) {
+  const evts = eventsForDay(ds);
+  const d = new Date(ds + 'T12:00:00');
+  const label = d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  document.getElementById('dayPopupTitle').textContent = '📅 ' + label.charAt(0).toUpperCase() + label.slice(1);
+
+  const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', autre:'#718096' };
+  document.getElementById('dayPopupList').innerHTML = evts.map(e => {
+    const typeColor = typeColors[getEventType(e)] || '#718096';
+    const personS = getPersonStyle(e.author);
+    const who = (e.author || '').split(',').map(n => n.trim()).filter(Boolean).join(', ');
+    const openId = e._originalId || e.id;
+    const owners = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
+    const isOwner = !e.prive || owners.includes(currentUser);
+    const clickable = isOwner ? `onclick="closeDayPopup();openEdit('${openId}')"` : '';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px;border-radius:8px;background:${personS.bg};color:${personS.text};border-left:4px solid ${typeColor};cursor:${isOwner?'pointer':'default'};" ${clickable}>
+      <span style="font-size:0.88rem;font-weight:600;">${eventLabel(e)}</span>
+      ${who ? `<span style="font-size:0.75rem;font-weight:700;opacity:0.8;">${who}</span>` : ''}
+    </div>`;
+  }).join('') || '<p style="color:#a0aec0;text-align:center;">Aucun événement</p>';
+
+  document.getElementById('dayPopupOverlay').style.display = 'flex';
+}
+
+function closeDayPopup() {
+  document.getElementById('dayPopupOverlay').style.display = 'none';
 }
 
 function closeModal() {
