@@ -907,7 +907,8 @@ function render() {
     // Gestion confidentialité : événements privés de l'agenda
     // t.author est une chaîne "Machin" ou "Machin, Bidule" — on splitte pour comparer
     const taskAuthors = (t.author || '').split(',').map(n => n.trim()).filter(Boolean);
-    const isOwnerOfTask = !currentUser || taskAuthors.length === 0 || taskAuthors.includes(currentUser);
+    const isCreatorOfTask = t.createdBy === currentUser;
+    const isOwnerOfTask = !currentUser || taskAuthors.length === 0 || taskAuthors.includes(currentUser) || isCreatorOfTask;
     const isPrivateTask = !!t.prive && !isOwnerOfTask;
     const displayTitle = isPrivateTask ? '🔒 Privé' : t.title;
     const canDelete = isOwnerOfTask;
@@ -1445,7 +1446,8 @@ function openEdit(id) {
   // Bloquer la modification par quelqu'un qui n'est pas l'auteur
   if (currentUser) {
     const authors = (t.author || '').split(',').map(n => n.trim()).filter(Boolean);
-    if (authors.length > 0 && !authors.includes(currentUser)) {
+    const isCreator = t.createdBy === currentUser;
+    if (authors.length > 0 && !authors.includes(currentUser) && !isCreator) {
       toast('🔒 Seul(e) ' + authors.join(' ou ') + ' peut modifier cette tâche');
       return;
     }
@@ -1518,6 +1520,7 @@ async function saveEdit() {
       url:       document.getElementById('editUrl').value.trim(),
       notes:     document.getElementById('editNotes').value.trim(),
       author,
+      createdBy: currentUser || '',
       status:    newStatus,
       createdAt: Date.now(),
     };
