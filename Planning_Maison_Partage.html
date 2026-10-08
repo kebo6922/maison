@@ -535,7 +535,7 @@ self.addEventListener('fetch',e=>{
 <!-- Modal édition tâche -->
 <div class="modal-overlay" id="editOverlay" style="display:none;">
   <div class="modal">
-    <h2>✏ Modifier la tâche</h2>
+    <h2 id="editModalTitle">✏ Modifier la tâche</h2>
     <label>Titre</label>
     <input type="text" id="editTitle" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.9rem;margin-bottom:10px;" />
     <label>Catégorie</label>
@@ -905,10 +905,12 @@ function render() {
     }
 
     // Gestion confidentialité : événements privés de l'agenda
-    const isOwnerOfTask = !currentUser || t.author === currentUser || (Array.isArray(t.author) && t.author.includes(currentUser));
+    // t.author est une chaîne "Machin" ou "Machin, Bidule" — on splitte pour comparer
+    const taskAuthors = (t.author || '').split(',').map(n => n.trim()).filter(Boolean);
+    const isOwnerOfTask = !currentUser || taskAuthors.length === 0 || taskAuthors.includes(currentUser);
     const isPrivateTask = !!t.prive && !isOwnerOfTask;
     const displayTitle = isPrivateTask ? '🔒 Privé' : t.title;
-    const canDelete = !currentUser || t.author === currentUser || (Array.isArray(t.author) && t.author.includes(currentUser));
+    const canDelete = isOwnerOfTask;
 
     el.innerHTML = `
       <div class="task-author" style="${getAuthorStyle(t.author)}">👤 ${t.author || 'Inconnu'}</div>
@@ -923,7 +925,7 @@ function render() {
       ${(!isPrivateTask && t.lieu) ? `<div style="font-size:0.72rem;color:#4a5568;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ${t.lieu}</div>` : ''}
       ${(!isPrivateTask && t.url) ? `<div style="margin-top:3px;"><a href="${t.url}" target="_blank" rel="noopener" style="font-size:0.72rem;color:#3182ce;text-decoration:none;font-weight:600;" onclick="event.stopPropagation()">🔗 Lien</a></div>` : ''}
       ${(!isPrivateTask && t.notes) ? `<div onclick="this.style.whiteSpace=this.style.whiteSpace==='normal'?'nowrap':'normal'" title="Cliquer pour lire" style="font-size:0.72rem;color:#718096;margin-top:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;" >📝 ${t.notes}</div>` : ''}
-      <div class="task-actions">${moveBtns}<button class="btn-sm" style="background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8;" onclick="openEdit('${t.id}')">✏ Modifier</button>${canDelete ? `<button class="btn-sm btn-del" onclick="deleteTask('${t.id}')">✕</button>` : ''}</div>`;
+      <div class="task-actions">${moveBtns}${isOwnerOfTask ? `<button class="btn-sm" style="background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8;" onclick="openEdit('${t.id}')">✏ Modifier</button>` : ''}${canDelete ? `<button class="btn-sm btn-del" onclick="deleteTask('${t.id}')">✕</button>` : ''}</div>`;
 
     document.getElementById('tasks-' + t.status).appendChild(el);
   });
@@ -1394,10 +1396,62 @@ function getEditTime(hId, mId) {
   return h && m ? `${h}:${m}` : '';
 }
 
+// Ouvrir le modal pour AJOUTER une nouvelle tâche (FAB ＋)
+function openAdd() {
+  if (!currentUser) {
+    toast('⚠ Choisissez d\'abord votre profil (cliquez sur le badge en haut)');
+    return;
+  }
+  editId = null;
+  document.getElementById('editTitle').value  = '';
+  document.getElementById('editCat').value    = 'bricolage';
+  document.getElementById('editPrio').value   = 'moyenne';
+  document.getElementById('editDate').value   = '';
+  document.getElementById('editAlert').value  = 7;
+  document.getElementById('editLieu').value   = '';
+  document.getElementById('editUrl').value    = '';
+  document.getElementById('editNotes').value  = '';
+  setEditTime('editTimeH','editTimeM','');
+  setEditTime('editTimeEndH','editTimeEndM','');
+  // Assigner à soi-même par défaut
+  const checksWrap = document.getElementById('editAssignChecks');
+  checksWrap.innerHTML = '';
+  const cfg = JSON.parse(localStorage.getItem('pmConfig') || '{}');
+  const membersRaw = cfg.members || 'Machin:kebo80@hotmail.fr\nBidule:emilieancel22@yahoo.fr\nBibi:abbigaelancel@gmail.com';
+  membersRaw.split('\n').forEach(line => {
+    const name = line.split(':')[0].trim();
+    if (!name) return;
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.88rem;';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = name;
+    cb.id = 'editAssign_' + name;
+    cb.checked = (name === currentUser);
+    cb.style.cursor = 'pointer';
+    lbl.appendChild(cb);
+    lbl.appendChild(document.createTextNode(name));
+    checksWrap.appendChild(lbl);
+  });
+  document.getElementById('editModalTitle').textContent = '➕ Nouvelle tâche';
+  document.getElementById('pmCommentsSection').style.display = 'none';
+  document.getElementById('editOverlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('editTitle').focus(), 100);
+}
+
 function openEdit(id) {
   const t = window._tasks[id];
   if (!t) return;
+  // Bloquer la modification par quelqu'un qui n'est pas l'auteur
+  if (currentUser) {
+    const authors = (t.author || '').split(',').map(n => n.trim()).filter(Boolean);
+    if (authors.length > 0 && !authors.includes(currentUser)) {
+      toast('🔒 Seul(e) ' + authors.join(' ou ') + ' peut modifier cette tâche');
+      return;
+    }
+  }
   editId = id;
+  document.getElementById('editModalTitle').textContent = '✏ Modifier la tâche';
   document.getElementById('editTitle').value  = t.title || '';
   document.getElementById('editCat').value    = t.cat   || 'bricolage';
   document.getElementById('editPrio').value   = t.prio  || 'moyenne';
@@ -1443,15 +1497,50 @@ function closeEdit() {
 }
 
 async function saveEdit() {
-  if (!editId) return;
   const editCat = document.getElementById('editCat').value;
+  const title   = document.getElementById('editTitle').value.trim();
+  if (!title) { toast('⚠ Le titre ne peut pas être vide !'); return; }
+
+  const author = [...document.querySelectorAll('#editAssignChecks input[type=checkbox]:checked')].map(cb => cb.value).join(', ') || currentUser || '';
+
+  // ── Création d'une nouvelle tâche (FAB ＋) ──
+  if (!editId) {
+    const newStatus = editCat === 'rdv' ? 'rdv' : 'todo';
+    const task = {
+      title,
+      cat:       editCat,
+      prio:      document.getElementById('editPrio').value,
+      date:      document.getElementById('editDate').value,
+      time:      getEditTime('editTimeH','editTimeM'),
+      timeEnd:   getEditTime('editTimeEndH','editTimeEndM'),
+      alertDays: parseInt(document.getElementById('editAlert').value) || 7,
+      lieu:      document.getElementById('editLieu').value.trim(),
+      url:       document.getElementById('editUrl').value.trim(),
+      notes:     document.getElementById('editNotes').value.trim(),
+      author,
+      status:    newStatus,
+      createdAt: Date.now(),
+    };
+    if (window.fbAdd) {
+      await window.fbAdd(task);
+    } else {
+      const id = 'd' + Date.now();
+      window._tasks[id] = { id, ...task };
+      render();
+    }
+    closeEdit();
+    toast('✅ Tâche ajoutée !');
+    return;
+  }
+
+  // ── Modification d'une tâche existante ──
   const prevStatus = (window._tasks[editId] || {}).status || 'todo';
   // Si on change la cat en rdv → colonne rdv ; si on enlève rdv d'une tâche rdv → todo
   const newStatus = editCat === 'rdv'
     ? 'rdv'
     : prevStatus === 'rdv' ? 'todo' : prevStatus;
   const updates = {
-    title:     document.getElementById('editTitle').value.trim(),
+    title,
     cat:       editCat,
     prio:      document.getElementById('editPrio').value,
     date:      document.getElementById('editDate').value,
@@ -1460,11 +1549,10 @@ async function saveEdit() {
     alertDays: parseInt(document.getElementById('editAlert').value) || 7,
     lieu:      document.getElementById('editLieu').value.trim(),
     url:       document.getElementById('editUrl').value.trim(),
-    author:    [...document.querySelectorAll('#editAssignChecks input[type=checkbox]:checked')].map(cb => cb.value).join(', ') || '',
+    author,
     notes:     document.getElementById('editNotes').value.trim(),
     status:    newStatus,
   };
-  if (!updates.title) { toast('⚠ Le titre ne peut pas être vide !'); return; }
   if (window.fbUpdate) {
     await window.fbUpdate(editId, updates);
   } else {

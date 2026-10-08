@@ -1034,7 +1034,11 @@ function renderWeekStrip() {
       const chipText = personS.text;
       const openId = e._originalId || e.id;
       const recurIcon = e._originalId ? ' 🔁' : '';
-      return `<div class="week-event-chip" style="background:${chipBg};color:${chipText};border-left:3px solid ${typeColor};" onclick="openEdit('${openId}')" title="${e.title||e.label||''}">${eventLabel(e)}${recurIcon}</div>`;
+      const weekOwners = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
+      const weekIsOwner = !e.prive || weekOwners.includes(currentUser);
+      const weekClick = weekIsOwner ? `onclick="openEdit('${openId}')"` : '';
+      const weekTitle = (e.prive && !weekIsOwner) ? '🔒 Privé' : (e.title||e.label||'');
+      return `<div class="week-event-chip" style="background:${chipBg};color:${chipText};border-left:3px solid ${typeColor};${e.prive&&!weekIsOwner?'cursor:default;':''}" ${weekClick} title="${weekTitle}">${eventLabel(e)}${recurIcon}</div>`;
     }).join('');
     if (evts.length > 3) evHtml += `<div class="more-badge">+${evts.length-3}</div>`;
     html += `<div class="${cls}">
@@ -1113,7 +1117,10 @@ function buildCell(d, ds, otherMonth, isToday, evts) {
     const who = (e.author || '').split(',').map(n => n.trim()).filter(Boolean).join(', ');
     const openId = e._originalId || e.id;
     const recurIcon = e._originalId ? ' 🔁' : '';
-    return `<div class="event-pill" style="display:flex;justify-content:space-between;gap:6px;background:${pillBg};color:${pillText};border-left:3px solid ${typeColor};" onclick="event.stopPropagation();openEdit('${openId}')">
+    const pillOwners = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
+    const pillIsOwner = !e.prive || pillOwners.includes(currentUser);
+    const pillClick = pillIsOwner ? `onclick="event.stopPropagation();openEdit('${openId}')"` : 'onclick="event.stopPropagation()"';
+    return `<div class="event-pill" style="display:flex;justify-content:space-between;gap:6px;background:${pillBg};color:${pillText};border-left:3px solid ${typeColor};${e.prive&&!pillIsOwner?'cursor:default;':''}" ${pillClick}>
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${eventLabel(e)}${recurIcon}</span>
       ${who ? `<span style="flex-shrink:0;opacity:0.8;font-weight:600;">${who}</span>` : ''}
     </div>`;
@@ -1203,10 +1210,14 @@ function openEdit(id) {
   const evts = getEvents();
   const e = evts[id];
   if (!e) return;
-  // Bloquer l'édition d'un événement privé dont on n'est pas propriétaire
+  // Bloquer l'édition si on n'est pas l'auteur
   const owners = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
   if (e.prive && !owners.includes(currentUser)) {
     showToast('🔒 Cet événement est privé');
+    return;
+  }
+  if (currentUser && owners.length > 0 && !owners.includes(currentUser)) {
+    showToast('🔒 Seul(e) ' + owners.join(' ou ') + ' peut modifier cet événement');
     return;
   }
 
