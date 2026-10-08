@@ -162,7 +162,7 @@
             ${item.qty ? `<span class="item-qty">${escHtml(item.qty)}</span>` : ''}
           </div>
           <span class="item-author" style="background:${pc.bg};color:${pc.text};border:1px solid ${pc.border};">${item.addedBy||'?'}</span>
-          ${currentUser===item.addedBy||!item.addedBy ? `<button class="del-btn" onclick="deleteItem('${item.id}')" title="Supprimer">🗑</button>` : ''}
+          <button class="del-btn" onclick="deleteItem('${item.id}')" title="Supprimer">🗑</button>
         </div>`;
       });
       html += `</div>`;
