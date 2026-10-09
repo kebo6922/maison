@@ -71,20 +71,20 @@
   let currentUser = localStorage.getItem('pmUser') || '';
   let items = {};
 
+  const DEFAULT_PINS = { Machin: '0512', Bidule: '1310', Bibi: '0206' };
   function getPinKey(n){ return 'pmPin_'+n; }
+  function getPin(name){ return localStorage.getItem(getPinKey(name)) || DEFAULT_PINS[name] || null; }
   function checkOrSetupPin(name, onSuccess){
-    const stored = localStorage.getItem(getPinKey(name));
-    if(!stored){
-      const pin1 = prompt(`Première connexion de ${name} 🎉\nChoisissez votre code PIN (4 chiffres) :`);
-      if(!pin1||!/^\d{4}$/.test(pin1)){alert('PIN invalide — 4 chiffres requis.');return;}
-      const pin2 = prompt('Confirmez votre PIN :');
-      if(pin1!==pin2){alert('Les PINs ne correspondent pas.');return;}
-      localStorage.setItem(getPinKey(name),pin1);
-      onSuccess();
-    } else {
-      const entered = prompt(`🔒 Connexion de ${name}\nEntrez votre PIN :`);
-      if(entered===stored){onSuccess();}else{alert('PIN incorrect.');}
+    // Si déjà authentifié dans cette session, pas besoin de PIN
+    if(localStorage.getItem('pmSessionAuth')==='1' && localStorage.getItem('pmUser')===name){
+      onSuccess(); return;
     }
+    const stored = getPin(name);
+    const entered = prompt(`🔒 Connexion de ${name}\nEntrez votre PIN :`);
+    if(entered===stored){
+      localStorage.setItem('pmSessionAuth','1');
+      onSuccess();
+    }else{alert('PIN incorrect.');}
   }
   function resolveMember(input){
     if(!input)return null;
@@ -97,8 +97,11 @@
     const match=resolveMember(input);
     if(!match){if(input)alert('Choix invalide.');return;}
     if(match===currentUser){alert('Vous êtes déjà connecté en tant que '+currentUser);return;}
+    // Réinitialiser la session pour forcer le PIN du nouveau profil
+    localStorage.removeItem('pmSessionAuth');
     checkOrSetupPin(match,function(){
       localStorage.setItem('pmUser',match);
+      localStorage.setItem('pmSessionAuth','1');
       currentUser=match;
       updateBadge();
       render();
@@ -347,6 +350,7 @@
         if(match){
           checkOrSetupPin(match,function(){
             localStorage.setItem('pmUser',match);
+            localStorage.setItem('pmSessionAuth','1');
             currentUser=match;
             updateBadge();
           });

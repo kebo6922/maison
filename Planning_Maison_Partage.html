@@ -401,6 +401,7 @@ self.addEventListener('fetch',e=>{
     <a class="nav-link" href="Stats_Famille.html">📊 Stats</a>
     <a class="nav-link" href="Notifications_Config.html">🔔 Notifs</a>
     <span id="pmUserBadge" onclick="switchProfile()" title="Changer de profil" class="nav-link" style="cursor:pointer;">👤 ?</span>
+    <button class="btn-hdr" onclick="changePin(currentUser)" title="Changer mon PIN">🔑</button>
     <button class="btn-hdr" onclick="toggleDark()" id="darkBtn">🌙</button>
     <button class="btn-hdr" onclick="openConfig()">⚙</button>
   </div>
@@ -700,25 +701,38 @@ function updateMemberSelect(membersRaw) {
 // ── PINs membres ──────────────────────────────────────────────
 const MEMBERS_LIST = ['Machin', 'Bidule', 'Bibi'];
 
+// PINs par défaut intégrés dans le code (fallback si localStorage vide)
+const DEFAULT_PINS = { Machin: '0512', Bidule: '1310', Bibi: '0206' };
+
 function getPinKey(name) { return 'pmPin_' + name; }
+function getPin(name) { return localStorage.getItem(getPinKey(name)) || DEFAULT_PINS[name] || null; }
 
 function checkOrSetupPin(name, onSuccess) {
-  const stored = localStorage.getItem(getPinKey(name));
-  if (!stored) {
-    const pin1 = prompt(`Première connexion de ${name} 🎉\nChoisissez votre code PIN (4 chiffres) :`);
-    if (!pin1 || !/^\d{4}$/.test(pin1)) { alert('PIN invalide — 4 chiffres requis.'); return; }
-    const pin2 = prompt('Confirmez votre PIN :');
-    if (pin1 !== pin2) { alert('Les PINs ne correspondent pas.'); return; }
-    localStorage.setItem(getPinKey(name), pin1);
+  // Si déjà authentifié dans cette session, pas besoin de PIN
+  if (localStorage.getItem('pmSessionAuth') === '1' && localStorage.getItem('pmUser') === name) {
+    onSuccess();
+    return;
+  }
+  const stored = getPin(name);
+  const entered = prompt(`🔒 Connexion de ${name}\nEntrez votre PIN :`);
+  if (entered === stored) {
+    localStorage.setItem('pmSessionAuth', '1');
     onSuccess();
   } else {
-    const entered = prompt(`🔒 Connexion de ${name}\nEntrez votre PIN :`);
-    if (entered === stored) {
-      onSuccess();
-    } else {
-      alert('PIN incorrect.');
-    }
+    alert('PIN incorrect.');
   }
+}
+
+function changePin(name) {
+  if (!name) { alert('Connectez-vous d\'abord.'); return; }
+  const current = prompt(`🔒 PIN actuel de ${name} :`);
+  if (current !== getPin(name)) { alert('PIN incorrect.'); return; }
+  const pin1 = prompt('Nouveau PIN (4 chiffres) :');
+  if (!pin1 || !/^\d{4}$/.test(pin1)) { alert('PIN invalide — 4 chiffres requis.'); return; }
+  const pin2 = prompt('Confirmez le nouveau PIN :');
+  if (pin1 !== pin2) { alert('Les PINs ne correspondent pas.'); return; }
+  localStorage.setItem(getPinKey(name), pin1);
+  alert(`✅ PIN de ${name} modifié avec succès !`);
 }
 
 // Gestion URL ?user= avec vérification PIN
@@ -758,8 +772,11 @@ function switchProfile() {
   const match = resolveMember(input);
   if (!match) { if (input) alert('Choix invalide.'); return; }
   if (match === currentUser) { alert('Vous êtes déjà connecté en tant que ' + currentUser); return; }
+  // Réinitialiser la session pour forcer le PIN du nouveau profil
+  localStorage.removeItem('pmSessionAuth');
   checkOrSetupPin(match, function() {
     localStorage.setItem('pmUser', match);
+    localStorage.setItem('pmSessionAuth', '1');
     currentUser = match;
     updatePmUserBadge();
     render();
@@ -773,6 +790,7 @@ if (!currentUser) {
     if (!match) return;
     checkOrSetupPin(match, function() {
       localStorage.setItem('pmUser', match);
+      localStorage.setItem('pmSessionAuth', '1');
       currentUser = match;
       updatePmUserBadge();
       render();
