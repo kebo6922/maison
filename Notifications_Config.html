@@ -369,9 +369,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 
-// Timestamp de démarrage — on n'affiche pas les anciennes données
 const startedAt = Date.now();
 let initialized = { tasks: false, comments: false, courses: false };
+let allTasks = {}; // snapshot complet des tâches pour les rappels d'échéance
 
 function getPrefs() {
   try { return JSON.parse(localStorage.getItem('notif_prefs')||'{}'); } catch{ return {}; }
@@ -380,23 +380,114 @@ function isEnabled() { return localStorage.getItem('notif_enabled')==='1'; }
 function shouldNotifAuthor(author) {
   if (!isEnabled()) return false;
   const prefs = getPrefs();
-  return prefs[author] !== false; // true par défaut
+  return prefs[author] !== false;
+}
+function todayStr() {
+  return new Date().toISOString().slice(0,10); // "2026-10-09"
+}
+
+// ── Anti-doublon pour les notifs temps réel ──────────
+// On mémorise les tags déjà notifiés dans cette session
+const notifiedTags = new Set();
+function showOnce(data) {
+  if (notifiedTags.has(data.tag)) return;
+  notifiedTags.add(data.tag);
+  window.showNotif && window.showNotif(data);
+}
+
+// ── Rappels d'échéance : 1 fois le matin + 1h avant ─
+// Clé localStorage : "notif_deadline_YYYY-MM-DD_taskId_type" → "1"
+function deadlineKey(taskId, type) {
+  return `notif_deadline_${todayStr()}_${taskId}_${type}`;
+}
+function alreadySent(taskId, type) {
+  return localStorage.getItem(deadlineKey(taskId, type)) === '1';
+}
+function markSent(taskId, type) {
+  localStorage.setItem(deadlineKey(taskId, type), '1');
+  // Nettoyage des anciennes clés (> 3 jours)
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 3);
+  const cutoffStr = cutoff.toISOString().slice(0,10);
+  Object.keys(localStorage).forEach(k => {
+    const m = k.match(/^notif_deadline_(\d{4}-\d{2}-\d{2})_/);
+    if (m && m[1] < cutoffStr) localStorage.removeItem(k);
+  });
+}
+
+function checkDeadlines(tasks) {
+  if (!isEnabled()) return;
+  const now  = new Date();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  Object.values(tasks).forEach(t => {
+    if (!t.date || t.status === 'done') return;
+    const deadline = new Date(t.date + 'T00:00:00');
+    const diffDays = Math.round((deadline - today) / 86400000);
+
+    // ── Rappel matin (aujourd'hui ou demain) ─────────
+    // Envoyé une fois au chargement de la page si pas encore fait aujourd'hui
+    if (diffDays === 0 || diffDays === 1) {
+      if (!alreadySent(t.id, 'matin')) {
+        const label = diffDays === 0 ? "⚡ Aujourd'hui !" : '📅 Demain';
+        window.showNotif && window.showNotif({
+          title: `🏠 Rappel – ${t.title || 'Tâche'}`,
+          body:  `${label} · ${t.author || ''}`,
+          author: t.author,
+          tag: `deadline-matin-${t.id}`
+        });
+        markSent(t.id, 'matin');
+        window.log && window.log(`Rappel matin : "${t.title}" (${label})`, 'ok');
+      }
+    }
+
+    // ── Rappel 1h avant (si heure définie) ───────────
+    if (t.time && diffDays === 0) {
+      const [hh, mm] = t.time.split(':').map(Number);
+      if (!isNaN(hh)) {
+        const eventTime = new Date(deadline);
+        eventTime.setHours(hh, mm || 0, 0, 0);
+        const diffMin = Math.round((eventTime - now) / 60000);
+        if (diffMin > 0 && diffMin <= 60 && !alreadySent(t.id, '1h')) {
+          window.showNotif && window.showNotif({
+            title: `⏰ Dans 1h – ${t.title || 'Tâche'}`,
+            body:  `À ${t.time} · ${t.author || ''}`,
+            author: t.author,
+            tag: `deadline-1h-${t.id}`
+          });
+          markSent(t.id, '1h');
+          window.log && window.log(`Rappel 1h avant : "${t.title}"`, 'ok');
+        }
+      }
+    }
+  });
+}
+
+// Vérification toutes les 5 minutes pour le rappel 1h avant
+function startDeadlineLoop(tasks) {
+  checkDeadlines(tasks);
+  setInterval(() => checkDeadlines(allTasks), 5 * 60 * 1000);
 }
 
 // ── Écoute nouvelles tâches/événements ───────────────
 const tasksRef = query(ref(db,'planning/tasks'), orderByChild('createdAt'), limitToLast(20));
 onValue(tasksRef, snap => {
-  if (!initialized.tasks) { initialized.tasks = true; return; } // ignore le chargement initial
-  const tasks = snap.val() || {};
-  Object.entries(tasks).forEach(([id, t]) => {
+  allTasks = snap.val() || {};
+  if (!initialized.tasks) {
+    initialized.tasks = true;
+    // Premier chargement : vérifier les échéances du jour
+    startDeadlineLoop(allTasks);
+    return;
+  }
+  // Nouvelles tâches ajoutées en temps réel
+  Object.entries(allTasks).forEach(([id, t]) => {
     if (!t.createdAt || t.createdAt < startedAt) return;
-    if (t.author === window.currentUser) return; // pas de notif pour soi-même
+    if (t.author === window.currentUser) return;
     if (!shouldNotifAuthor(t.author)) return;
     const isAgenda = t.cat === 'agenda' || !!t.date;
     const emoji = isAgenda ? '📅' : '✅';
     const type  = isAgenda ? 'Agenda' : 'Planning';
     const title = t.prive ? '🔒 Événement privé' : (t.title || 'Nouvel élément');
-    window.showNotif && window.showNotif({
+    showOnce({
       title: `${emoji} ${t.author} – ${type}`,
       body:  t.prive ? '(événement privé)' : title,
       author: t.author,
@@ -417,7 +508,7 @@ onValue(commentsRef, snap => {
     Object.entries(comments).forEach(([cid, c]) => {
       if (!c.createdAt || c.createdAt < startedAt) return;
       if (c.author === window.currentUser) return;
-      window.showNotif && window.showNotif({
+      showOnce({
         title: `💬 ${c.author} a commenté`,
         body:  c.text ? c.text.slice(0,80) : '',
         author: c.author,
@@ -438,7 +529,7 @@ onValue(coursesRef, snap => {
   Object.entries(items).forEach(([id, item]) => {
     if (!item.createdAt || item.createdAt < startedAt) return;
     if (item.addedBy === window.currentUser) return;
-    window.showNotif && window.showNotif({
+    showOnce({
       title: `🛒 ${item.addedBy||'Quelqu\'un'} a ajouté aux courses`,
       body:  item.name || '',
       author: item.addedBy,
