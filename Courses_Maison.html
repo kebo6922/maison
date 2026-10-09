@@ -181,29 +181,28 @@
       html += `<div class="category-group">
         <div class="cat-header">${cat} <span class="cat-count">${notDone.length}/${catItems.length}</span></div>`;
       [...notDone, ...doneItems].forEach(item=>{
-        const pc = PERSON_COLORS[item.addedBy]||{bg:'#e2e8f0',text:'#4a5568',border:'#cbd5e0'};
+        const DEF_COLOR = {bg:'#e2e8f0',text:'#4a5568',border:'#cbd5e0'};
+        const pc  = PERSON_COLORS[item.addedBy]  || DEF_COLOR;
+        const pcE = PERSON_COLORS[item.editedBy] || DEF_COLOR;
         const doneClass = item.done ? ' done' : '';
         const mag = getMagasinInfo(item.magasin || '');
-        const shopBadge = item.magasin ? `<span title="${mag.label}" style="display:inline-flex;align-items:center;">${magasinImg(mag, 20)}</span>` : '';
-        html += `<div class="item-row${doneClass}" data-id="${item.id}">
-          <input type="checkbox" class="item-check" ${item.done?'checked':''} onchange="toggleItem('${item.id}',this.checked)">
-          <div class="item-body">
-            <span class="item-name">${escHtml(item.name)}</span>
-            ${item.qty ? `<span class="item-qty">${escHtml(item.qty)}</span>` : ''}
-          </div>
-          ${shopBadge}
-          ${(()=>{
-            const pcE = PERSON_COLORS[item.editedBy] || PERSON_COLORS['?'];
-            const edited = item.editedBy && item.editedBy !== item.addedBy;
-            if (edited) {
-              return `<span class="item-author" style="background:${pc.bg};color:${pc.text};border:1px solid ${pc.border};" title="Ajouté par ${item.addedBy||'?'}">${item.addedBy||'?'}</span>`
-                   + `<span class="item-author item-edited" style="background:${pcE.bg};color:${pcE.text};border:1px solid ${pcE.border};" title="Modifié par ${item.editedBy}">✏️${item.editedBy}</span>`;
-            }
-            return `<span class="item-author" style="background:${pc.bg};color:${pc.text};border:1px solid ${pc.border};">${item.addedBy||'?'}</span>`;
-          })()}
-          <button class="edit-btn" onclick="openEditItem('${item.id}')" title="Modifier">✏️</button>
-          <button class="del-btn" onclick="deleteItem('${item.id}')" title="Supprimer">🗑</button>
-        </div>`;
+        const shopBadge = item.magasin ? '<span title="'+mag.label+'" style="display:inline-flex;align-items:center;">'+magasinImg(mag, 20)+'</span>' : '';
+        const authorBadge = '<span class="item-author" style="background:'+pc.bg+';color:'+pc.text+';border:1px solid '+pc.border+';">'+(item.addedBy||'?')+'</span>';
+        const editBadge = (item.editedBy && item.editedBy !== item.addedBy)
+          ? '<span class="item-author item-edited" style="background:'+pcE.bg+';color:'+pcE.text+';border:1px solid '+pcE.border+';" title="Modifié par '+item.editedBy+'">✏️ '+item.editedBy+'</span>'
+          : '';
+        html += '<div class="item-row'+doneClass+'" data-id="'+item.id+'">'
+          + '<input type="checkbox" class="item-check" '+(item.done?'checked':'')+' onchange="toggleItem(\''+item.id+'\',this.checked)">'
+          + '<div class="item-body">'
+          + '<span class="item-name">'+escHtml(item.name)+'</span>'
+          + (item.qty ? '<span class="item-qty">'+escHtml(item.qty)+'</span>' : '')
+          + '</div>'
+          + shopBadge
+          + authorBadge
+          + editBadge
+          + '<button class="edit-btn" onclick="openEditItem(\''+item.id+'\')" title="Modifier">✏️</button>'
+          + '<button class="del-btn" onclick="deleteItem(\''+item.id+'\')" title="Supprimer">🗑</button>'
+          + '</div>';
       });
       html += `</div>`;
     });
