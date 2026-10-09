@@ -39,7 +39,14 @@
   .btn-secondary { background:var(--blue-bg); color:var(--blue); border:1.5px solid var(--blue); }
   .btn-green     { background:var(--green-bg); color:var(--green); border:1.5px solid var(--green); }
   .person-toggles { display:flex; flex-direction:column; gap:10px; }
-  .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:10px; border:1.5px solid #e2e8f0; }
+  .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:10px; border:1.5px solid var(--border,#e2e8f0); background:var(--row-bg,transparent); }
+  .label-machin { color:#1a365d; }
+  .label-bidule { color:#742a2a; }
+  .label-bibi   { color:#1a4731; }
+  body.dark .label-machin { color:#bee3f8; }
+  body.dark .label-bidule { color:#feb2b2; }
+  body.dark .label-bibi   { color:#9ae6b4; }
+  body.dark { --border:#4a5568; --row-bg:#2d3748; }
   .toggle-label { font-size:.9rem; font-weight:600; }
   .toggle { position:relative; width:44px; height:24px; flex-shrink:0; }
   .toggle input { opacity:0; width:0; height:0; }
@@ -48,6 +55,7 @@
   input:checked + .slider { background:#667eea; }
   input:checked + .slider:before { transform:translateX(20px); }
   .info-box { background:var(--orange-bg); border:1.5px solid #f6ad55; border-radius:10px; padding:12px 14px; font-size:.83rem; line-height:1.5; color:#7b341e; }
+  body.dark .info-box { color:#f6ad55; }
   .info-box strong { display:block; margin-bottom:4px; }
   #log { font-family:monospace; font-size:.78rem; color:var(--txt2); max-height:160px; overflow-y:auto; }
   .log-line { padding:2px 0; border-bottom:1px dotted rgba(0,0,0,.06); }
@@ -62,6 +70,9 @@
   .badge-machin { background:#bee3f8; color:#1a365d; }
   .badge-bidule { background:#fc8181; color:#742a2a; }
   .badge-bibi   { background:#c6f6d5; color:#1a4731; }
+  body.dark .badge-machin { background:#1a3a52; color:#bee3f8; }
+  body.dark .badge-bidule { background:#5a1a1a; color:#feb2b2; }
+  body.dark .badge-bibi   { background:#1a3d2b; color:#9ae6b4; }
 </style>
 </head>
 <body>
@@ -114,15 +125,15 @@
     <div class="card-title">Me notifier quand…</div>
     <div class="person-toggles">
       <div class="toggle-row">
-        <span class="toggle-label" style="color:#1a365d;">🔵 Machin crée un événement</span>
+        <span class="toggle-label label-machin">🔵 Machin crée un événement</span>
         <label class="toggle"><input type="checkbox" id="notif_Machin" onchange="savePrefs()" checked><span class="slider"></span></label>
       </div>
       <div class="toggle-row">
-        <span class="toggle-label" style="color:#742a2a;">🔴 Bidule crée un événement</span>
+        <span class="toggle-label label-bidule">🔴 Bidule crée un événement</span>
         <label class="toggle"><input type="checkbox" id="notif_Bidule" onchange="savePrefs()" checked><span class="slider"></span></label>
       </div>
       <div class="toggle-row">
-        <span class="toggle-label" style="color:#1a4731;">🟢 Bibi crée un événement</span>
+        <span class="toggle-label label-bibi">🟢 Bibi crée un événement</span>
         <label class="toggle"><input type="checkbox" id="notif_Bibi" onchange="savePrefs()" checked><span class="slider"></span></label>
       </div>
       <div class="toggle-row">

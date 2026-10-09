@@ -891,14 +891,15 @@ function render() {
       const month   = d.toLocaleDateString('fr-FR', { month:'long' });
       const year    = d.getFullYear();
       const weekday = d.toLocaleDateString('fr-FR', { weekday:'long' });
-      let rdvColor = diff < 0 ? '#9b2c2c' : diff <= 7 ? '#c05621' : '#1a365d';
-      let rdvBg    = diff < 0 ? '#fff5f5' : diff <= 7 ? '#fffaf0' : '#ebf8ff';
+      const _dark = document.body.classList.contains('dark');
+      let rdvColor = diff < 0 ? (_dark?'#fc8181':'#9b2c2c') : diff <= 7 ? (_dark?'#f6ad55':'#c05621') : (_dark?'#63b3ed':'#1a365d');
+      let rdvBg    = diff < 0 ? (_dark?'#3d1515':'#fff5f5') : diff <= 7 ? (_dark?'#3d2a10':'#fffaf0') : (_dark?'#142638':'#ebf8ff');
       let timeStr = '';
       if (t.time) { timeStr = t.time; if (t.timeEnd) timeStr += ` → ${t.timeEnd}`; }
       rdvDateHtml = `<div style="text-align:center;margin:6px 0;padding:8px;background:${rdvBg};border-radius:8px;border:1px solid ${rdvColor}22;">
         <div style="font-size:2rem;font-weight:900;line-height:1;color:${rdvColor};">${dayNum}</div>
         <div style="font-size:0.85rem;font-weight:700;color:${rdvColor};text-transform:capitalize;">${month} ${year}</div>
-        <div style="font-size:0.72rem;color:#718096;text-transform:capitalize;">${weekday}${diff >= 0 ? ` · dans ${diff}j` : ` · dépassé de ${Math.abs(diff)}j`}</div>
+        <div style="font-size:0.72rem;color:${_dark?'#a0aec0':'#718096'};text-transform:capitalize;">${weekday}${diff >= 0 ? ` · dans ${diff}j` : ` · dépassé de ${Math.abs(diff)}j`}</div>
         ${timeStr ? `<div style="font-size:0.85rem;font-weight:700;color:${rdvColor};margin-top:3px;">🕐 ${timeStr}</div>` : ''}
       </div>`;
       dlHtml = ''; // on n'affiche pas la ligne date en double
