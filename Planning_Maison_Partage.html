@@ -1333,45 +1333,65 @@ async function drop(e, status) {
 // COULEURS PAR PERSONNE
 // ══════════════════════════════════════════════════════════════
 const PERSON_COLORS = {
-  'Machin': { bg: '#bee3f8', text: '#1a365d', border: '#90cdf4' },
-  'Bidule': { bg: '#fc8181', text: '#742a2a', border: '#e53e3e' },
-  'Bibi':   { bg: '#c6f6d5', text: '#1a4731', border: '#68d391' },
+  'Machin': { bg: '#bee3f8', text: '#1a365d', border: '#90cdf4', darkBg: '#1a3a52', darkText: '#bee3f8', darkBorder: '#2c5f80' },
+  'Bidule': { bg: '#fc8181', text: '#742a2a', border: '#e53e3e', darkBg: '#5a1a1a', darkText: '#feb2b2', darkBorder: '#9b2c2c' },
+  'Bibi':   { bg: '#c6f6d5', text: '#1a4731', border: '#68d391', darkBg: '#1a3d2b', darkText: '#9ae6b4', darkBorder: '#276749' },
 };
 
 function getAuthorStyle(author) {
   if (!author) return '';
+  const isDark = document.body.classList.contains('dark');
   const names = author.split(',').map(n => n.trim()).filter(Boolean);
   if (names.length === 1) {
     const c = PERSON_COLORS[names[0]];
-    if (c) return `background:${c.bg};color:${c.text};border:1px solid ${c.border};`;
-    return 'background:#e2e8f0;color:#4a5568;border:1px solid #cbd5e0;';
+    if (c) {
+      const bg = isDark ? c.darkBg : c.bg;
+      const text = isDark ? c.darkText : c.text;
+      const border = isDark ? c.darkBorder : c.border;
+      return `background:${bg};color:${text};border:1px solid ${border};`;
+    }
+    return isDark
+      ? 'background:#3a4a5c;color:#e2e8f0;border:1px solid #4a5568;'
+      : 'background:#e2e8f0;color:#4a5568;border:1px solid #cbd5e0;';
   }
-  // Mix de couleurs : dégradé avec les couleurs des personnes
-  const colors = names.map(n => (PERSON_COLORS[n] || { bg: '#e2e8f0' }).bg);
+  // Mix de couleurs
+  const bgKey = isDark ? 'darkBg' : 'bg';
+  const colors = names.map(n => (PERSON_COLORS[n] || {})[bgKey] || (isDark ? '#3a4a5c' : '#e2e8f0'));
+  const textColor = isDark ? '#e2e8f0' : '#2d3748';
+  const borderColor = isDark ? '#4a5568' : '#cbd5e0';
   if (colors.length === 2) {
-    return `background:linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%);color:#2d3748;border:1px solid #cbd5e0;`;
+    return `background:linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%);color:${textColor};border:1px solid ${borderColor};`;
   }
   const pct = 100 / colors.length;
   const stops = colors.map((c, i) => `${c} ${Math.round(i*pct)}%, ${c} ${Math.round((i+1)*pct)}%`).join(', ');
-  return `background:linear-gradient(135deg, ${stops});color:#2d3748;border:1px solid #cbd5e0;`;
+  return `background:linear-gradient(135deg, ${stops});color:${textColor};border:1px solid ${borderColor};`;
 }
 
 function getCardBackground(author) {
   if (!author) return '';
+  const isDark = document.body.classList.contains('dark');
   const names = author.split(',').map(n => n.trim()).filter(Boolean);
   if (names.length === 1) {
     const c = PERSON_COLORS[names[0]];
-    if (c) return `background:${c.bg};border:1px solid ${c.border};`;
-    return '';
+    if (c) {
+      const bg = isDark ? c.darkBg : c.bg;
+      const border = isDark ? c.darkBorder : c.border;
+      const text = isDark ? c.darkText : c.text;
+      return `background:${bg};border:1px solid ${border};color:${text};`;
+    }
+    return isDark ? 'background:#3a4a5c;border:1px solid #4a5568;color:#e2e8f0;' : '';
   }
-  const colors = names.map(n => (PERSON_COLORS[n] || { bg: '#e2e8f0' }).bg);
-  const borders = names.map(n => (PERSON_COLORS[n] || { border: '#cbd5e0' }).border);
+  const bgKey = isDark ? 'darkBg' : 'bg';
+  const borderKey = isDark ? 'darkBorder' : 'border';
+  const colors = names.map(n => (PERSON_COLORS[n] || {})[bgKey] || (isDark ? '#3a4a5c' : '#e2e8f0'));
+  const borders = names.map(n => (PERSON_COLORS[n] || {})[borderKey] || (isDark ? '#4a5568' : '#cbd5e0'));
+  const textColor = isDark ? '#e2e8f0' : '#2d3748';
   if (colors.length === 2) {
-    return `background:linear-gradient(135deg, ${colors[0]} 0%, ${colors[0]} calc(50% - 1px), ${colors[1]} calc(50% + 1px), ${colors[1]} 100%);border:1px solid ${borders[0]};color:#2d3748;`;
+    return `background:linear-gradient(135deg, ${colors[0]} 0%, ${colors[0]} calc(50% - 1px), ${colors[1]} calc(50% + 1px), ${colors[1]} 100%);border:1px solid ${borders[0]};color:${textColor};`;
   }
   const pct = 100 / colors.length;
   const stops = colors.map((c, i) => `${c} ${Math.round(i*pct)}%, ${c} ${Math.round((i+1)*pct)}%`).join(', ');
-  return `background:linear-gradient(135deg, ${stops});border:1px solid ${borders[0]};color:#2d3748;`;
+  return `background:linear-gradient(135deg, ${stops});border:1px solid ${borders[0]};color:${textColor};`;
 }
 
 // ══════════════════════════════════════════════════════════════
