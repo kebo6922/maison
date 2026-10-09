@@ -183,8 +183,8 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
   font-size: 0.87rem; background: #f7fafc; color: #1a202c;
 }
 .toolbar input[type="text"] { flex: 1; min-width: 180px; }
-.btn { padding: 7px 15px; border: none; border-radius: 8px; font-size: 0.87rem;
-  font-weight: 600; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.btn { padding: 9px 20px; border: none; border-radius: 10px; font-size: 0.88rem;
+  font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
 .btn-add { background: #2d6a4f; color: white; }
 .btn-add:hover { background: #1b4332; }
 .btn-alert { background: #ebf8ff; color: #2b6cb0; }
@@ -265,13 +265,14 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
 @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 /* ── Modal config ────────────────────────────────────────────── */
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
 .modal-overlay.open { display: flex; }
-.modal { background: white; border-radius: 14px; padding: 24px; max-width: 480px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
-.modal h2 { font-size: 1.1rem; margin-bottom: 16px; color: #2d6a4f; }
-.modal label { font-size: 0.85rem; font-weight: 600; color: #4a5568; display: block; margin-bottom: 4px; margin-top: 12px; }
-.modal input, .modal select { width: 100%; padding: 8px 11px; border: 1px solid #cbd5e0; border-radius: 8px; font-size: 0.88rem; }
-.modal-actions { display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end; }
+.modal { background: white; border-radius: 16px; padding: 24px; max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+.modal h2 { font-size: 1.15rem; margin-bottom: 16px; color: #2d3748; }
+.modal label { font-size: 0.78rem; font-weight: 700; color: #4a5568; display: block; margin-bottom: 4px; margin-top: 12px; text-transform: uppercase; letter-spacing: .4px; }
+.modal input, .modal select, .modal textarea { width: 100%; padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; margin-bottom: 4px; font-family: inherit; background: white; color: #1a202c; box-sizing: border-box; }
+.modal input:focus, .modal select:focus, .modal textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,.15); }
+.modal-actions { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
 .btn-save { background: #2d6a4f; color: white; }
 .btn-cancel-m { background: #edf2f7; color: #4a5568; }
 .modal p.hint { font-size: 0.78rem; color: #718096; margin-top: 6px; line-height: 1.5; }
@@ -302,7 +303,8 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
   /* Modal plein écran bas */
   .modal-overlay { align-items: flex-end; padding: 0; }
   .modal { border-radius: 20px 20px 0 0; max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch; width: 100%; padding: 20px 16px 24px; }
-  .modal input, .modal select, .modal textarea { padding: 12px; font-size: 1rem; }
+  .modal input, .modal select, .modal textarea { padding: 12px 14px; font-size: 1rem; }
+  .btn { padding: 12px 20px; font-size: 0.95rem; }
   /* Cartes tâches plus grandes */
   .task-card { padding: 12px 14px; }
   .task-title { font-size: 0.95rem; }
