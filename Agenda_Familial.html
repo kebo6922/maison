@@ -752,6 +752,16 @@ const now = new Date();
 viewYear  = now.getFullYear();
 viewMonth = now.getMonth();
 
+// Rafraîchir la vue quand on revient sur la page (PWA en cache)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    const t = new Date();
+    viewYear  = t.getFullYear();
+    viewMonth = t.getMonth();
+    renderAll();
+  }
+});
+
 // ── Tâches exposées par Firebase ─────────────────────
 window._tasks = {};
 
