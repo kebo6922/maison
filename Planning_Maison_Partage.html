@@ -660,7 +660,12 @@ let darkMode = localStorage.getItem('pmDark') === '1';
 if (darkMode) document.body.classList.add('dark');
 
 // Config sauvegardée en localStorage
-let cfg = JSON.parse(localStorage.getItem('pmConfig') || '{}');
+const DEFAULT_CONFIG = {
+  ejsSvcId:  'service_wnsnv9a',
+  ejsTplId:  'template_mmk7cw5',
+  ejsPubKey: 'wO8gbKkcO-SajxpTM',
+};
+let cfg = Object.assign({}, DEFAULT_CONFIG, JSON.parse(localStorage.getItem('pmConfig') || '{}'));
 
 function updateMemberSelect(membersRaw) {
   const current = localStorage.getItem('pmUser') || '';
@@ -1644,7 +1649,7 @@ function showRappelBannerPM() {
 // ALERTES MAIL — EmailJS
 // ══════════════════════════════════════════════════════════════
 function runAlerts() {
-  const ejsCfg = JSON.parse(localStorage.getItem('pmConfig') || '{}');
+  const ejsCfg = Object.assign({}, DEFAULT_CONFIG, JSON.parse(localStorage.getItem('pmConfig') || '{}'));
   if (!ejsCfg.ejsSvcId || !ejsCfg.ejsTplId || !ejsCfg.ejsPubKey) {
     toast('⚠ Configurer EmailJS d\'abord (bouton ⚙)', 4000);
     openConfig();
@@ -1817,7 +1822,7 @@ function setPrioFilter(prio) {
 // TEST EMAIL
 // ══════════════════════════════════════════════════════════════
 function testEmail() {
-  const ejsCfg = JSON.parse(localStorage.getItem('pmConfig') || '{}');
+  const ejsCfg = Object.assign({}, DEFAULT_CONFIG, JSON.parse(localStorage.getItem('pmConfig') || '{}'));
   if (!ejsCfg.ejsSvcId || !ejsCfg.ejsTplId || !ejsCfg.ejsPubKey) {
     toast('⚠ Remplis d\'abord les champs EmailJS ci-dessus !', 4000);
     return;
