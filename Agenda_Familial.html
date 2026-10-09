@@ -1024,11 +1024,16 @@ function renderMobileList() {
 
   daysEl.innerHTML = html;
 
-  // Scroller jusqu'au jour actuel (ou premier jour futur si aujourd'hui sans événements)
+  // Scroller jusqu'au jour actuel avec offset pour compenser le header fixe
+  function scrollToEl(el) {
+    const headerH = document.querySelector('.mobile-header')?.offsetHeight || 100;
+    const top = el.getBoundingClientRect().top + window.scrollY - headerH - 8;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }
   requestAnimationFrame(() => {
     const todayEl = document.getElementById('mobile-today');
     if (todayEl) {
-      todayEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollToEl(todayEl);
     } else {
       // Aujourd'hui n'a pas d'événements : chercher le premier groupe dont la date >= aujourd'hui
       const todayStr = toDateStr(new Date());
@@ -1039,7 +1044,7 @@ function renderMobileList() {
         // Récupérer la date via onclick="openAdd('YYYY-MM-DD')"
         const match = header.getAttribute('onclick')?.match(/openAdd\('(\d{4}-\d{2}-\d{2})'\)/);
         if (match && match[1] >= todayStr) {
-          g.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          scrollToEl(g);
           break;
         }
       }
