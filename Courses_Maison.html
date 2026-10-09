@@ -128,9 +128,12 @@
   function renderShopFilters() {
     const el = document.getElementById('shopFilters');
     if (!el) return;
-    el.innerHTML = MAGASINS.map(m =>
-      `<button class="shop-filter-btn${activeShopFilter===m.id?' active':''}" onclick="setShopFilter('${m.id}')">${m.emoji} ${m.label}</button>`
-    ).join('');
+    el.innerHTML = MAGASINS.map(m => {
+      const icon = m.logo
+        ? `<img src="${m.logo}" width="16" height="16" style="border-radius:3px;object-fit:contain;vertical-align:middle;margin-right:4px;" onerror="this.outerHTML='🛒 '">`
+        : (m.id === '' ? '🛒 ' : '🏪 ');
+      return `<button class="shop-filter-btn${activeShopFilter===m.id?' active':''}" onclick="setShopFilter('${m.id}')">${icon}${m.label}</button>`;
+    }).join('');
   }
   window.setShopFilter = function(id) {
     activeShopFilter = id;
@@ -178,7 +181,7 @@
         const pc = PERSON_COLORS[item.addedBy]||{bg:'#e2e8f0',text:'#4a5568',border:'#cbd5e0'};
         const doneClass = item.done ? ' done' : '';
         const mag = getMagasinInfo(item.magasin || '');
-        const shopBadge = item.magasin ? `<span title="${mag.label}" style="font-size:1rem;line-height:1;">${mag.emoji}</span>` : '';
+        const shopBadge = item.magasin ? `<span title="${mag.label}" style="display:inline-flex;align-items:center;">${magasinImg(mag, 20)}</span>` : '';
         html += `<div class="item-row${doneClass}" data-id="${item.id}">
           <input type="checkbox" class="item-check" ${item.done?'checked':''} onchange="toggleItem('${item.id}',this.checked)">
           <div class="item-body">
@@ -250,20 +253,25 @@
   }
 
   const MAGASINS = [
-    { id:'', label:'Tous magasins', emoji:'🛒' },
-    { id:'leclerc',      label:'Leclerc',      emoji:'🔵' },
-    { id:'intermarche',  label:'Intermarché',  emoji:'🔴' },
-    { id:'lidl',         label:'Lidl',         emoji:'🟡' },
-    { id:'aldi',         label:'Aldi',         emoji:'🟠' },
-    { id:'carrefour',    label:'Carrefour',    emoji:'🔵' },
-    { id:'biocoop',      label:'Biocoop',      emoji:'🌿' },
-    { id:'picard',       label:'Picard',       emoji:'❄️' },
-    { id:'amazon',       label:'Amazon',       emoji:'📦' },
-    { id:'autre',        label:'Autre',        emoji:'🏪' },
+    { id:'',             label:'Tous magasins', logo: null },
+    { id:'leclerc',      label:'Leclerc',      logo:'https://www.e.leclerc/favicon.ico' },
+    { id:'intermarche',  label:'Intermarché',  logo:'https://www.intermarche.com/favicon.ico' },
+    { id:'lidl',         label:'Lidl',         logo:'https://www.lidl.fr/favicon.ico' },
+    { id:'aldi',         label:'Aldi',         logo:'https://www.aldi.fr/favicon.ico' },
+    { id:'carrefour',    label:'Carrefour',    logo:'https://www.carrefour.fr/favicon.ico' },
+    { id:'biocoop',      label:'Biocoop',      logo:'https://www.biocoop.fr/favicon.ico' },
+    { id:'picard',       label:'Picard',       logo:'https://www.picard.fr/favicon.ico' },
+    { id:'amazon',       label:'Amazon',       logo:'https://www.amazon.fr/favicon.ico' },
+    { id:'autre',        label:'Autre',        logo: null },
   ];
 
+  function magasinImg(m, size=18) {
+    if (!m || !m.logo) return `<span style="font-size:${size}px;">🏪</span>`;
+    return `<img src="${m.logo}" alt="${m.label}" width="${size}" height="${size}" style="border-radius:3px;object-fit:contain;vertical-align:middle;" onerror="this.outerHTML='🏪'">`;
+  }
+
   function getMagasinInfo(id) {
-    return MAGASINS.find(m => m.id === id) || { id:'', label:'', emoji:'🛒' };
+    return MAGASINS.find(m => m.id === id) || { id:'', label:'', logo: null };
   }
 
   function addItem(){
@@ -462,15 +470,15 @@ body { background: var(--bg); color: var(--fg); font-family: -apple-system, Blin
   </select>
   <select id="newItemShop">
     <option value="">🛒 Magasin…</option>
-    <option value="leclerc">🔵 Leclerc</option>
-    <option value="intermarche">🔴 Intermarché</option>
-    <option value="lidl">🟡 Lidl</option>
-    <option value="aldi">🟠 Aldi</option>
-    <option value="carrefour">🔵 Carrefour</option>
-    <option value="biocoop">🌿 Biocoop</option>
-    <option value="picard">❄️ Picard</option>
-    <option value="amazon">📦 Amazon</option>
-    <option value="autre">🏪 Autre</option>
+    <option value="leclerc">Leclerc</option>
+    <option value="intermarche">Intermarché</option>
+    <option value="lidl">Lidl</option>
+    <option value="aldi">Aldi</option>
+    <option value="carrefour">Carrefour</option>
+    <option value="biocoop">Biocoop</option>
+    <option value="picard">Picard</option>
+    <option value="amazon">Amazon</option>
+    <option value="autre">Autre</option>
   </select>
   <button class="add-btn" onclick="addItem()">+ Ajouter</button>
 </div>
