@@ -123,23 +123,45 @@
     }
   }
 
+  let activeShopFilter = '';
+
+  function renderShopFilters() {
+    const el = document.getElementById('shopFilters');
+    if (!el) return;
+    el.innerHTML = MAGASINS.map(m =>
+      `<button class="shop-filter-btn${activeShopFilter===m.id?' active':''}" onclick="setShopFilter('${m.id}')">${m.emoji} ${m.label}</button>`
+    ).join('');
+  }
+  window.setShopFilter = function(id) {
+    activeShopFilter = id;
+    renderShopFilters();
+    render();
+  };
+
   function render(){
     updateBadge();
+    renderShopFilters();
     const list = document.getElementById('itemList');
     if(!list) return;
+
+    // Filtrer par magasin si actif
+    const filteredItems = Object.entries(items).filter(([id,item])=>{
+      if (!activeShopFilter) return true;
+      return (item.magasin || '') === activeShopFilter;
+    });
 
     // Grouper par catégorie
     const byCategory = {};
     CATEGORIES.forEach(c=>{ byCategory[c]=[]; });
     byCategory['🛒 Autre'] = byCategory['🛒 Autre']||[];
 
-    Object.entries(items).forEach(([id,item])=>{
+    filteredItems.forEach(([id,item])=>{
       const cat = item.category || '🛒 Autre';
       if(!byCategory[cat]) byCategory[cat]=[];
       byCategory[cat].push({id,...item});
     });
 
-    // Compter total non cochés
+    // Compter total non cochés (sur tous les articles, pas filtrés)
     const total = Object.values(items).filter(i=>!i.done).length;
     const done = Object.values(items).filter(i=>i.done).length;
     document.getElementById('countBadge').textContent = total > 0 ? `${total} restant${total>1?'s':''}` : done > 0 ? '✅ Tout acheté !' : '';
@@ -155,12 +177,15 @@
       [...notDone, ...doneItems].forEach(item=>{
         const pc = PERSON_COLORS[item.addedBy]||{bg:'#e2e8f0',text:'#4a5568',border:'#cbd5e0'};
         const doneClass = item.done ? ' done' : '';
+        const mag = getMagasinInfo(item.magasin || '');
+        const shopBadge = item.magasin ? `<span title="${mag.label}" style="font-size:1rem;line-height:1;">${mag.emoji}</span>` : '';
         html += `<div class="item-row${doneClass}" data-id="${item.id}">
           <input type="checkbox" class="item-check" ${item.done?'checked':''} onchange="toggleItem('${item.id}',this.checked)">
           <div class="item-body">
             <span class="item-name">${escHtml(item.name)}</span>
             ${item.qty ? `<span class="item-qty">${escHtml(item.qty)}</span>` : ''}
           </div>
+          ${shopBadge}
           <span class="item-author" style="background:${pc.bg};color:${pc.text};border:1px solid ${pc.border};">${item.addedBy||'?'}</span>
           <button class="del-btn" onclick="deleteItem('${item.id}')" title="Supprimer">🗑</button>
         </div>`;
@@ -195,11 +220,10 @@
   function loadHistory() {
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || {}; } catch { return {}; }
   }
-  function saveToHistory(name, category) {
+  function saveToHistory(name, category, magasin) {
     const h = loadHistory();
-    // Clé = nom normalisé en minuscule pour dédoublonner
     const key = name.toLowerCase().trim();
-    h[key] = { name: name.trim(), category }; // màj catégorie à chaque ajout
+    h[key] = { name: name.trim(), category, magasin: magasin || '' };
     localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
     refreshDatalist();
   }
@@ -209,31 +233,54 @@
     const h = loadHistory();
     dl.innerHTML = Object.values(h)
       .sort((a, b) => a.name.localeCompare(b.name, 'fr'))
-      .map(e => `<option value="${e.name}" data-cat="${e.category}">`)
+      .map(e => `<option value="${e.name}" data-cat="${e.category}" data-shop="${e.magasin||''}">`)
       .join('');
   }
-  // Auto-sélectionner la catégorie mémorisée quand on choisit une suggestion
+  // Auto-sélectionner la catégorie et le magasin mémorisés
   function onArticleInput() {
     const nameEl = document.getElementById('newItemName');
     const catEl  = document.getElementById('newItemCat');
+    const shopEl = document.getElementById('newItemShop');
     const h = loadHistory();
     const key = nameEl.value.toLowerCase().trim();
-    if (h[key]) catEl.value = h[key].category;
+    if (h[key]) {
+      catEl.value = h[key].category;
+      if (shopEl && h[key].magasin) shopEl.value = h[key].magasin;
+    }
+  }
+
+  const MAGASINS = [
+    { id:'', label:'Tous magasins', emoji:'🛒' },
+    { id:'leclerc',      label:'Leclerc',      emoji:'🔵' },
+    { id:'intermarche',  label:'Intermarché',  emoji:'🔴' },
+    { id:'lidl',         label:'Lidl',         emoji:'🟡' },
+    { id:'aldi',         label:'Aldi',         emoji:'🟠' },
+    { id:'carrefour',    label:'Carrefour',    emoji:'🔵' },
+    { id:'biocoop',      label:'Biocoop',      emoji:'🌿' },
+    { id:'picard',       label:'Picard',       emoji:'❄️' },
+    { id:'amazon',       label:'Amazon',       emoji:'📦' },
+    { id:'autre',        label:'Autre',        emoji:'🏪' },
+  ];
+
+  function getMagasinInfo(id) {
+    return MAGASINS.find(m => m.id === id) || { id:'', label:'', emoji:'🛒' };
   }
 
   function addItem(){
     const nameEl = document.getElementById('newItemName');
     const qtyEl  = document.getElementById('newItemQty');
     const catEl  = document.getElementById('newItemCat');
+    const shopEl = document.getElementById('newItemShop');
     const name = nameEl.value.trim();
     if(!name) return;
     if(!currentUser){ alert('Connectez-vous d\'abord (cliquez sur 👤)'); return; }
     const category = catEl.value;
+    const magasin = shopEl ? shopEl.value : '';
     push(coursesRef,{
-      name, qty: qtyEl.value.trim(), category,
+      name, qty: qtyEl.value.trim(), category, magasin,
       addedBy: currentUser, addedAt: Date.now(), done: false
     });
-    saveToHistory(name, category);
+    saveToHistory(name, category, magasin);
     nameEl.value=''; qtyEl.value='';
     nameEl.focus();
   }
@@ -338,8 +385,21 @@ body { background: var(--bg); color: var(--fg); font-family: -apple-system, Blin
 #newItemName { flex: 2; min-width: 120px; }
 #newItemQty  { flex: 0.7; min-width: 70px; }
 #newItemCat  { flex: 1.5; min-width: 130px; }
+#newItemShop { flex: 1.2; min-width: 110px; }
 .add-btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 9px 18px; font-size: .95rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .add-btn:active { opacity: .8; }
+
+/* FILTRES MAGASINS */
+.shop-filters { padding: 8px 12px 4px; display: flex; gap: 6px; flex-wrap: wrap; }
+.shop-filter-btn {
+  border: 1.5px solid var(--border); border-radius: 20px;
+  padding: 5px 12px; font-size: .8rem; cursor: pointer;
+  background: var(--surface); color: var(--fg); white-space: nowrap;
+  transition: all .15s;
+}
+.shop-filter-btn.active {
+  background: var(--accent); color: white; border-color: var(--accent); font-weight: 700;
+}
 
 /* LISTE */
 #itemList { padding: 0 12px 80px; }
@@ -400,8 +460,22 @@ body { background: var(--bg); color: var(--fg); font-family: -apple-system, Blin
     <option value="❄️ Surgelés">❄️ Surgelés</option>
     <option value="🧹 Entretien">🧹 Entretien</option>
   </select>
+  <select id="newItemShop">
+    <option value="">🛒 Magasin…</option>
+    <option value="leclerc">🔵 Leclerc</option>
+    <option value="intermarche">🔴 Intermarché</option>
+    <option value="lidl">🟡 Lidl</option>
+    <option value="aldi">🟠 Aldi</option>
+    <option value="carrefour">🔵 Carrefour</option>
+    <option value="biocoop">🌿 Biocoop</option>
+    <option value="picard">❄️ Picard</option>
+    <option value="amazon">📦 Amazon</option>
+    <option value="autre">🏪 Autre</option>
+  </select>
   <button class="add-btn" onclick="addItem()">+ Ajouter</button>
 </div>
+
+<div class="shop-filters" id="shopFilters"></div>
 
 <div id="itemList"></div>
 
