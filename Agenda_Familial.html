@@ -1025,10 +1025,26 @@ function renderMobileList() {
 
   daysEl.innerHTML = html;
 
-  // Scroller jusqu'au jour actuel
+  // Scroller jusqu'au jour actuel (ou premier jour futur si aujourd'hui sans événements)
   requestAnimationFrame(() => {
     const todayEl = document.getElementById('mobile-today');
-    if (todayEl) todayEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (todayEl) {
+      todayEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      // Aujourd'hui n'a pas d'événements : chercher le premier groupe dont la date >= aujourd'hui
+      const todayStr = toDateStr(new Date());
+      const allGroups = daysEl.querySelectorAll('.mobile-day-group');
+      for (const g of allGroups) {
+        const header = g.querySelector('.mobile-day-header');
+        if (!header) continue;
+        // Récupérer la date via onclick="openAdd('YYYY-MM-DD')"
+        const match = header.getAttribute('onclick')?.match(/openAdd\('(\d{4}-\d{2}-\d{2})'\)/);
+        if (match && match[1] >= todayStr) {
+          g.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          break;
+        }
+      }
+    }
   });
 }
 
