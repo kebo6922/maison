@@ -218,6 +218,7 @@ header h1 { font-size: 1.1rem; font-weight: 800; }
 .type-sport      { border-color: #38a169; color: #1a4731; background: #c6f6d5; }
 .type-diner      { border-color: #e07b39; color: #7b341e; background: #feebc8; }
 .type-sortie     { border-color: #9b59d0; color: #5a1e6e; background: #e9d8fd; }
+.type-artisans   { border-color: #b7791f; color: #744210; background: #fefcbf; }
 .type-bricolage  { border-color: #c05621; color: #7b341e; background: #feebc8; }
 .type-jardin     { border-color: #276749; color: #1a4731; background: #c6f6d5; }
 .type-entretien  { border-color: #2b6cb0; color: #1a365d; background: #bee3f8; }
@@ -519,6 +520,7 @@ self.addEventListener('fetch',e=>{
       <option value="diner">🍽️ Dîner / Invitation</option>
       <option value="sortie">🎉 Sortie</option>
       <option value="rdv">📅 Rendez-vous</option>
+      <option value="artisans">🔩 Artisans</option>
       <option value="bricolage">🔨 Bricolage</option>
       <option value="jardin">🌿 Jardin</option>
       <option value="entretien">🔧 Entretien</option>
@@ -627,6 +629,7 @@ const TYPE_CLASS = {
   sport:       'type-sport',
   diner:       'type-diner',
   sortie:      'type-sortie',
+  artisans:    'type-artisans',
   bricolage:   'type-bricolage',
   jardin:      'type-jardin',
   entretien:   'type-entretien',
@@ -636,7 +639,7 @@ const TYPE_CLASS = {
   autre:       'type-autre',
 };
 const TYPE_EMOJI = {
-  sport:'🏃', diner:'🍽️', sortie:'🎉', rdv:'📅',
+  sport:'🏃', diner:'🍽️', sortie:'🎉', rdv:'📅', artisans:'🔩',
   bricolage:'🔨', jardin:'🌿', entretien:'🔧', admin:'📋',
   deplacement:'💼', autre:'📌'
 };
@@ -887,7 +890,7 @@ function buildMultiDayBanners(ds) {
   if (!multiEvts.length) return '';
   return multiEvts.map(e => {
     const isVacances = e.evType === 'vacances';
-    const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', vacances:'#276749', autre:'#718096' };
+    const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', vacances:'#276749', artisans:'#b7791f', autre:'#718096' };
     const typeColor = typeColors[getEventType(e)] || '#718096';
     // Fond = couleur de la/les personne(s), bordure gauche = couleur du type
     const personS  = getPersonStyle(e.author);
@@ -952,7 +955,7 @@ function renderMobileList() {
 
   const today = toDateStr(new Date());
   const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', autre:'#718096' };
+  const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', artisans:'#b7791f', autre:'#718096' };
 
   let html = '';
   for (let day = 1; day <= lastDay; day++) {
@@ -1071,7 +1074,7 @@ function renderWeekStrip() {
     const isToday = ds === toDateStr(today);
     const cls = isToday ? 'week-day today' : evts.length ? 'week-day has-event' : 'week-day';
     let evHtml = evts.slice(0, 3).map(e => {
-      const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', autre:'#718096' };
+      const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', artisans:'#b7791f', autre:'#718096' };
       const typeColor = typeColors[getEventType(e)] || '#718096';
       const personS  = getPersonStyle(e.author);
       const chipBg   = personS.bg;
@@ -1153,7 +1156,7 @@ function buildCell(d, ds, otherMonth, isToday, evts) {
   const bannerHtml = buildMultiDayBanners(ds);
 
   let evHtml = evts.slice(0, 3).map(e => {
-    const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', autre:'#718096' };
+    const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', artisans:'#b7791f', autre:'#718096' };
     const typeColor = typeColors[getEventType(e)] || '#718096';
     const personS  = getPersonStyle(e.author);
     const pillBg   = personS.bg;
@@ -1301,7 +1304,7 @@ function openDayPopup(ds) {
   const label = d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
   document.getElementById('dayPopupTitle').textContent = '📅 ' + label.charAt(0).toUpperCase() + label.slice(1);
 
-  const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', autre:'#718096' };
+  const typeColors = { sport:'#38a169', diner:'#e07b39', sortie:'#9b59d0', rdv:'#3182ce', bricolage:'#c05621', jardin:'#276749', entretien:'#2b6cb0', admin:'#6b46c1', deplacement:'#2c7a7b', artisans:'#b7791f', autre:'#718096' };
   document.getElementById('dayPopupList').innerHTML = evts.map(e => {
     const typeColor = typeColors[getEventType(e)] || '#718096';
     const personS = getPersonStyle(e.author);
@@ -1478,7 +1481,7 @@ function showRappelBanner() {
   const evtsTomorrow = eventsForDay(tomorrowStr);
   if (!evtsToday.length && !evtsTomorrow.length) return;
 
-  const TYPE_EMOJI_LOCAL = { sport:'🏃', diner:'🍽️', sortie:'🎉', rdv:'📅', bricolage:'🔨', jardin:'🌿', entretien:'🔧', admin:'📋', deplacement:'💼', autre:'📌' };
+  const TYPE_EMOJI_LOCAL = { sport:'🏃', diner:'🍽️', sortie:'🎉', rdv:'📅', artisans:'🔩', bricolage:'🔨', jardin:'🌿', entretien:'🔧', admin:'📋', deplacement:'💼', autre:'📌' };
   const fmt2 = (label, evts) => evts.map(e => {
     const em = TYPE_EMOJI_LOCAL[getEventType(e)] || '📌';
     const h  = e.time ? ` ${e.time}` : '';
@@ -1618,6 +1621,7 @@ function pickEvSugg(el) {
     '🏃 Sport': 'sport',
     '🍽️ Dîner / Invitation': 'diner',
     '🎉 Sortie': 'sortie',
+    '🔩 Artisans': 'artisans',
     '📅 Rendez-vous': 'rdv',
     '💼 Déplacement pro': 'deplacement',
     '📌 Autre': 'autre',

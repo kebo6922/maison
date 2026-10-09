@@ -448,6 +448,7 @@ self.addEventListener('fetch',e=>{
       <option value="entretien">🔧 Entretien</option>
       <option value="admin">📋 Admin</option>
       <option value="rdv">📅 Rendez-vous</option>
+      <option value="artisans">🔩 Artisans</option>
       <option value="sport">⚽ Sport</option>
       <option value="diner">🍽️ Dîner</option>
       <option value="sortie">🎭 Sortie</option>
@@ -547,6 +548,7 @@ self.addEventListener('fetch',e=>{
       <option value="entretien">🔧 Entretien</option>
       <option value="admin">📋 Admin</option>
       <option value="rdv">📅 Rendez-vous</option>
+      <option value="artisans">🔩 Artisans</option>
       <option value="sport">⚽ Sport</option>
       <option value="diner">🍽️ Dîner</option>
       <option value="sortie">🎭 Sortie</option>
@@ -869,7 +871,7 @@ function render() {
       `<button class="btn-sm btn-move" onclick="moveTask('${t.id}','${m.s}')">${m.l}</button>`
     ).join('');
 
-    const catLabel = { bricolage:'🔨 Bricolage', jardin:'🌿 Jardin', entretien:'🔧 Entretien', admin:'📋 Admin', rdv:'📅 Rendez-vous', sport:'⚽ Sport', diner:'🍽️ Dîner', sortie:'🎭 Sortie', deplacement:'✈️ Déplacement pro' }[t.cat] || t.cat;
+    const catLabel = { bricolage:'🔨 Bricolage', jardin:'🌿 Jardin', entretien:'🔧 Entretien', admin:'📋 Admin', rdv:'📅 Rendez-vous', artisans:'🔩 Artisans', sport:'⚽ Sport', diner:'🍽️ Dîner', sortie:'🎭 Sortie', deplacement:'✈️ Déplacement pro' }[t.cat] || t.cat;
     const prioLabel = { haute:'🔴 Haute', moyenne:'🟡 Moy.', basse:'🟢 Basse' }[t.prio] || t.prio;
 
     // Couleur de fond = personne assignée (pour tous, planning ET agenda)
@@ -1214,7 +1216,7 @@ function toggleAllSuggestions() {
 
   // Grouper par catégorie
   const groups = {};
-  const catNames = { bricolage:'🔨 Bricolage', jardin:'🌿 Jardin', entretien:'🔧 Entretien / Ménage', admin:'📋 Admin / Courses', rdv:'📅 Rendez-vous' };
+  const catNames = { bricolage:'🔨 Bricolage', jardin:'🌿 Jardin', entretien:'🔧 Entretien / Ménage', admin:'📋 Admin / Courses', rdv:'📅 Rendez-vous', artisans:'🔩 Artisans' };
   SUGGESTIONS.forEach(s => {
     if (!groups[s.cat]) groups[s.cat] = [];
     groups[s.cat].push(s);
