@@ -967,8 +967,7 @@ function renderMobileList() {
     const dayNames = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
     const dayName = dayNames[d.getDay()];
 
-    html += `<div class="mobile-day-group">
-      <div class="mobile-day-header${isToday?' today':''}" onclick="openAdd('${ds}')">
+    html += `<div class="mobile-day-group"${isToday?' id="mobile-today"':''}>\n      <div class="mobile-day-header${isToday?' today':''}" onclick="openAdd('${ds}')">
         <div class="mobile-day-num">${day}</div>
         <div>
           <div class="mobile-day-name">${dayName}</div>
@@ -1025,6 +1024,12 @@ function renderMobileList() {
   }
 
   daysEl.innerHTML = html;
+
+  // Scroller jusqu'au jour actuel
+  requestAnimationFrame(() => {
+    const todayEl = document.getElementById('mobile-today');
+    if (todayEl) todayEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 }
 
 // ── Semaine courante ──────────────────────────────────
