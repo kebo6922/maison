@@ -961,9 +961,8 @@ function renderMobileList() {
     const evts = eventsForDay(ds);
     const multiEvts = getMultiDayEvents(ds).filter(e => e.date !== ds); // bandeaux (pas le jour de départ qui est déjà dans evts)
     const allEvts = [...evts, ...multiEvts];
-    if (!allEvts.length) continue; // ne montrer que les jours avec events
-
     const isToday = ds === today;
+    if (!allEvts.length && !isToday) continue; // ne montrer que les jours avec events (sauf aujourd'hui)
     const dayNames = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
     const dayName = dayNames[d.getDay()];
 
@@ -971,7 +970,7 @@ function renderMobileList() {
         <div class="mobile-day-num">${day}</div>
         <div>
           <div class="mobile-day-name">${dayName}</div>
-          <div style="font-size:0.7rem;color:#a0aec0;">${allEvts.length} événement${allEvts.length>1?'s':''}</div>
+          <div style="font-size:0.7rem;color:#a0aec0;">${allEvts.length ? allEvts.length+' événement'+(allEvts.length>1?'s':'') : '✨ Journée libre'}</div>
         </div>
       </div>`;
 
