@@ -110,7 +110,7 @@ header {
   display: flex; align-items: center; justify-content: space-between;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   flex-wrap: wrap; gap: 8px;
-  position: sticky; top: 0; z-index: 200;
+  position: sticky; top: 0; z-index: 50;
 }
 header h1 { font-size: 1.1rem; font-weight: 800; }
 .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -295,6 +295,7 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
     gap: 6px; padding: 8px 16px;
     background: white; border: none; border-bottom: 1px solid #e2e8f0;
     font-size: 0.85rem; font-weight: 700; color: #4a5568; cursor: pointer;
+    position: relative; z-index: 20;
   }
   body.dark .toolbar-toggle-btn { background: #2d3748; color: #e2e8f0; border-color: #4a5568; }
   .toolbar { display: none; }
@@ -308,8 +309,8 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
   .col { min-width: unset; }
   .stats { padding: 10px; flex-wrap: wrap; gap: 8px; }
   .stat-box { flex: 1; min-width: 80px; padding: 10px; }
-  /* Header compact */
-  header { padding: 10px 14px; }
+  /* Header compact — plus sticky sur mobile (sinon cache le contenu quand clavier ouvert) */
+  header { padding: 10px 14px; position: relative; z-index: 10; }
   header h1 { font-size: 1.1rem; }
   /* Bouton ajouter dans header caché → remplacé par FAB */
   .btn-add { display: none; }
