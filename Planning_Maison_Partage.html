@@ -287,6 +287,20 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
   border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(72,187,120,0.5);
 }
 
+/* ── Toolbar toggle btn (mobile only) ───────────────────────── */
+.toolbar-toggle-btn { display: none; }
+@media (max-width: 768px) {
+  .toolbar-toggle-btn {
+    display: flex; width: 100%; align-items: center; justify-content: center;
+    gap: 6px; padding: 8px 16px;
+    background: white; border: none; border-bottom: 1px solid #e2e8f0;
+    font-size: 0.85rem; font-weight: 700; color: #4a5568; cursor: pointer;
+  }
+  body.dark .toolbar-toggle-btn { background: #2d3748; color: #e2e8f0; border-color: #4a5568; }
+  .toolbar { display: none; }
+  .toolbar.open { display: flex; }
+}
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
   /* Colonnes en vertical */
@@ -425,7 +439,9 @@ self.addEventListener('fetch',e=>{
   <button class="filter-btn filter-btn-all active" onclick="setFilter('')" id="fbtn-all">Tous</button>
 </div>
 
-<div class="toolbar">
+<button class="toolbar-toggle-btn" id="toolbarToggleBtn" onclick="toggleToolbar()">➕ Nouvelle tâche <span id="toolbarToggleArrow">▾</span></button>
+
+<div class="toolbar" id="toolbarPanel">
 
   <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:200px;">
     <span style="font-size:0.72rem;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.04em;">Titre</span>
@@ -956,7 +972,7 @@ function render() {
       ${(!isPrivateTask && t.lieu) ? `<div style="font-size:0.72rem;color:#4a5568;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ${t.lieu}</div>` : ''}
       ${(!isPrivateTask && t.url) ? `<div style="margin-top:3px;"><a href="${t.url}" target="_blank" rel="noopener" style="font-size:0.72rem;color:#3182ce;text-decoration:none;font-weight:600;" onclick="event.stopPropagation()">🔗 Lien</a></div>` : ''}
       ${(!isPrivateTask && t.notes) ? `<div onclick="this.style.whiteSpace=this.style.whiteSpace==='normal'?'nowrap':'normal'" title="Cliquer pour lire" style="font-size:0.72rem;color:#718096;margin-top:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;" >📝 ${t.notes}</div>` : ''}
-      <div class="task-actions">${moveBtns}${isOwnerOfTask ? `<button class="btn-sm" style="background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8;" onclick="openEdit('${t.id}')">✏ Modifier</button>` : ''}${canDelete ? `<button class="btn-sm btn-del" onclick="deleteTask('${t.id}')">✕</button>` : ''}</div>`;
+      <div class="task-actions">${moveBtns}<button class="btn-sm" style="background:#fffbeb;color:#b7791f;border:1px solid #fef3c7;" onclick="duplicateTask('${t.id}')" title="Dupliquer">📋</button>${isOwnerOfTask ? `<button class="btn-sm" style="background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8;" onclick="openEdit('${t.id}')">✏ Modifier</button>` : ''}${canDelete ? `<button class="btn-sm btn-del" onclick="deleteTask('${t.id}')">✕</button>` : ''}</div>`;
 
     document.getElementById('tasks-' + t.status).appendChild(el);
   });
@@ -1312,6 +1328,34 @@ async function moveTask(id, status) {
     if (window._tasks[id]) window._tasks[id].status = status;
     render();
   }
+}
+
+/* ── Toolbar toggle (mobile) ───────────────────────────────── */
+function toggleToolbar() {
+  const panel = document.getElementById('toolbarPanel');
+  const arrow = document.getElementById('toolbarToggleArrow');
+  if (!panel) return;
+  panel.classList.toggle('open');
+  if (arrow) arrow.textContent = panel.classList.contains('open') ? '▴' : '▾';
+}
+
+/* ── Duplication de tâche ──────────────────────────────────── */
+async function duplicateTask(id) {
+  const t = window._tasks && window._tasks[id];
+  if (!t) return;
+  const copy = Object.assign({}, t);
+  delete copy.id;
+  copy.title = '📋 ' + (copy.title || '');
+  copy.createdAt = Date.now();
+  copy.author = currentUser || copy.author;
+  if (window.fbAdd) {
+    await window.fbAdd(copy);
+  } else {
+    const nid = 'local_' + Date.now();
+    window._tasks[nid] = Object.assign({ id: nid }, copy);
+    render();
+  }
+  toast('📋 Tâche dupliquée !');
 }
 
 async function deleteTask(id) {
