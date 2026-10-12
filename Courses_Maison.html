@@ -127,19 +127,35 @@
   }
 
   let activeShopFilter = '';
+  let activeDoneFilter = ''; // '' = tout, 'todo' = non cochés, 'done' = cochés
 
   function renderShopFilters() {
     const el = document.getElementById('shopFilters');
     if (!el) return;
-    el.innerHTML = MAGASINS.map(m => {
+    // Filtres magasins
+    const shopBtns = MAGASINS.map(m => {
       const icon = m.logo
         ? `<img src="${m.logo}" width="16" height="16" style="border-radius:3px;object-fit:contain;vertical-align:middle;margin-right:4px;" onerror="this.outerHTML='🛒 '">`
         : (m.id === '' ? '🛒 ' : '🏪 ');
       return `<button class="shop-filter-btn${activeShopFilter===m.id?' active':''}" onclick="setShopFilter('${m.id}')">${icon}${m.label}</button>`;
     }).join('');
+    // Filtres coché/décoché
+    const doneBtns = [
+      { id: '',     label: '📋 Tous' },
+      { id: 'todo', label: '⬜ À faire' },
+      { id: 'done', label: '✅ Cochés' }
+    ].map(f =>
+      `<button class="shop-filter-btn done-filter-btn${activeDoneFilter===f.id?' active':''}" onclick="setDoneFilter('${f.id}')">${f.label}</button>`
+    ).join('');
+    el.innerHTML = shopBtns + '<span class="filter-sep"></span>' + doneBtns;
   }
   window.setShopFilter = function(id) {
     activeShopFilter = id;
+    renderShopFilters();
+    render();
+  };
+  window.setDoneFilter = function(id) {
+    activeDoneFilter = id;
     renderShopFilters();
     render();
   };
@@ -150,10 +166,12 @@
     const list = document.getElementById('itemList');
     if(!list) return;
 
-    // Filtrer par magasin si actif
+    // Filtrer par magasin et par état coché
     const filteredItems = Object.entries(items).filter(([id,item])=>{
-      if (!activeShopFilter) return true;
-      return (item.magasin || '') === activeShopFilter;
+      if (activeShopFilter && (item.magasin || '') !== activeShopFilter) return false;
+      if (activeDoneFilter === 'todo' && item.done) return false;
+      if (activeDoneFilter === 'done' && !item.done) return false;
+      return true;
     });
 
     // Grouper par catégorie
@@ -239,6 +257,14 @@
   };
   window.closeEditItem = function() {
     document.getElementById('editItemModal').style.display = 'none';
+  };
+  window.deleteEditItem = function() {
+    const id = document.getElementById('editItemId').value;
+    if (!id) return;
+    if (confirm('Supprimer cet article ?')) {
+      remove(ref(db,'maison/courses/'+id));
+      closeEditItem();
+    }
   };
   window.saveEditItem = function() {
     const id = document.getElementById('editItemId').value;
@@ -440,8 +466,8 @@ body { background: var(--bg); color: var(--fg); font-family: -apple-system, Blin
 .add-btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 9px 18px; font-size: .95rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .add-btn:active { opacity: .8; }
 
-/* FILTRES MAGASINS */
-.shop-filters { padding: 8px 12px 4px; display: flex; gap: 6px; flex-wrap: wrap; }
+/* FILTRES MAGASINS + ÉTAT */
+.shop-filters { padding: 8px 12px 4px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .shop-filter-btn {
   border: 1.5px solid var(--border); border-radius: 20px;
   padding: 5px 12px; font-size: .8rem; cursor: pointer;
@@ -451,6 +477,8 @@ body { background: var(--bg); color: var(--fg); font-family: -apple-system, Blin
 .shop-filter-btn.active {
   background: var(--accent); color: white; border-color: var(--accent); font-weight: 700;
 }
+.done-filter-btn.active { background: #38a169; border-color: #38a169; }
+.filter-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; margin: 0 4px; }
 
 /* LISTE */
 #itemList { padding: 0 12px 80px; }
@@ -495,6 +523,8 @@ body { background: var(--bg); color: var(--fg); font-family: -apple-system, Blin
 }
 .edit-modal-btns { display: flex; gap: 8px; margin-top: 20px; }
 .edit-modal-btns button { flex: 1; padding: 11px; border: none; border-radius: 8px; font-size: .95rem; font-weight: 700; cursor: pointer; }
+.edit-del-btn { background: #fed7d7; color: #c53030; }
+.edit-del-btn:hover { background: #feb2b2; }
 .edit-save-btn { background: var(--accent); color: white; }
 .edit-cancel-btn { background: var(--border); color: var(--fg); }
 
@@ -513,7 +543,6 @@ body { background: var(--bg); color: var(--fg); font-family: -apple-system, Blin
     <a class="nav-link" href="Stats_Famille.html">📊 Stats</a>
     <a class="nav-link" href="Notifications_Config.html">🔔 Notifs</a>
     <span id="coursesUserBadge" onclick="switchProfile()" title="Changer de profil">👤 ?</span>
-    <button id="clearDoneBtn" onclick="clearDone()" style="display:none;background:#e53e3e;color:white;border:none;border-radius:8px;padding:6px 12px;font-size:.8rem;cursor:pointer;font-weight:600;">🗑 Vider les cochés</button>
   </div>
 </div>
 
