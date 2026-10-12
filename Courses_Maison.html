@@ -128,6 +128,7 @@
 
   let activeShopFilter = '';
   let activeDoneFilter = ''; // '' = tout, 'todo' = non cochés, 'done' = cochés
+  let activePrixFilter = false; // true = afficher seulement les moins chers
 
   function renderShopFilters() {
     const el = document.getElementById('shopFilters');
@@ -147,7 +148,8 @@
     ].map(f =>
       `<button class="shop-filter-btn done-filter-btn${activeDoneFilter===f.id?' active':''}" onclick="setDoneFilter('${f.id}')">${f.label}</button>`
     ).join('');
-    el.innerHTML = shopBtns + '<span class="filter-sep"></span>' + doneBtns;
+    const prixBtn = '<button class="shop-filter-btn done-filter-btn prix-filter-btn'+(activePrixFilter?' active':'')+'" onclick="togglePrixFilter()">💚 Moins chers</button>';
+    el.innerHTML = shopBtns + '<span class="filter-sep"></span>' + doneBtns + '<span class="filter-sep"></span>' + prixBtn;
   }
   window.setShopFilter = function(id) {
     activeShopFilter = id;
@@ -159,6 +161,11 @@
     renderShopFilters();
     render();
   };
+  window.togglePrixFilter = function() {
+    activePrixFilter = !activePrixFilter;
+    renderShopFilters();
+    render();
+  };
 
   function render(){
     updateBadge();
@@ -166,11 +173,22 @@
     const list = document.getElementById('itemList');
     if(!list) return;
 
-    // Filtrer par magasin et par état coché
+    // Calcul "isBestPrice" pour chaque article (magasin habituel = le moins cher parmi les prix renseignés)
+    function isBestPrice(item) {
+      if (!item.prix || typeof item.prix !== 'object') return false;
+      const entries = Object.entries(item.prix).map(([,v])=>parseFloat(v)).filter(v=>!isNaN(v));
+      if (entries.length < 2) return false;
+      const magPrix = item.magasin && item.prix[item.magasin] != null ? parseFloat(item.prix[item.magasin]) : null;
+      if (magPrix === null) return false;
+      return magPrix === Math.min(...entries);
+    }
+
+    // Filtrer par magasin, état coché, et filtre prix
     const filteredItems = Object.entries(items).filter(([id,item])=>{
       if (activeShopFilter && (item.magasin || '') !== activeShopFilter) return false;
       if (activeDoneFilter === 'todo' && item.done) return false;
       if (activeDoneFilter === 'done' && !item.done) return false;
+      if (activePrixFilter && !isBestPrice(item)) return false;
       return true;
     });
 
@@ -210,24 +228,27 @@
           ? '<span class="item-author item-edited" style="background:'+pcE.bg+';color:'+pcE.text+';border:1px solid '+pcE.border+';" title="Modifié par '+item.editedBy+'">✏️ '+item.editedBy+'</span>'
           : '';
 
-        // Badge prix : affiche le prix du magasin habituel + comparatif si plusieurs magasins
+        // Badge prix : affiche le prix du magasin habituel + vert si moins cher + comparatif
         let prixBadge = '';
         if (item.prix && typeof item.prix === 'object') {
           const prixEntries = Object.entries(item.prix).map(([mid,v])=>({mid,v:parseFloat(v)})).filter(e=>!isNaN(e.v));
           if (prixEntries.length > 0) {
-            // Prix du magasin habituel de l'article (ou le plus bas si pas de magasin)
             const magPrix = item.magasin && item.prix[item.magasin] != null
               ? parseFloat(item.prix[item.magasin]) : null;
             const minPrix = Math.min(...prixEntries.map(e=>e.v));
             const isPromo = item.promos && item.magasin && item.promos[item.magasin];
             const isBest = magPrix !== null && magPrix === minPrix && prixEntries.length > 1;
             const displayPrix = magPrix !== null ? magPrix : minPrix;
-            const promoTag = isPromo ? '<span style="font-size:0.65rem;margin-right:2px;">🏷️</span>' : '';
-            const bestTag = isBest && prixEntries.length > 1 ? ' style="color:#276749;font-weight:700;"' : '';
+            const promoTag = isPromo ? '🏷️ ' : '';
             const multiBtn = prixEntries.length > 1
-              ? '<button onclick="showPrixComparatif(\''+item.id+'\')" title="Comparer les prix" style="background:none;border:none;cursor:pointer;font-size:0.8rem;padding:0 2px;line-height:1;">📊</button>'
+              ? '<button onclick="showPrixComparatif(\''+item.id+'\')" title="Comparer les prix" style="background:none;border:none;cursor:pointer;font-size:0.75rem;padding:0 0 0 3px;line-height:1;opacity:0.7;">📊</button>'
               : '';
-            prixBadge = '<span class="item-prix"'+bestTag+'>'+promoTag+displayPrix.toFixed(2)+' €'+multiBtn+'</span>';
+            if (isBest) {
+              // Vert vif + icône ✓ bien visible
+              prixBadge = '<span class="item-prix item-prix-best">'+promoTag+'💚 '+displayPrix.toFixed(2)+' €'+multiBtn+'</span>';
+            } else {
+              prixBadge = '<span class="item-prix">'+promoTag+displayPrix.toFixed(2)+' €'+multiBtn+'</span>';
+            }
           }
         }
 
@@ -604,6 +625,8 @@ body { background: var(--bg); color: var(--fg); font-family: -apple-system, Blin
 .item-author { font-size: .7rem; font-weight: 600; padding: 2px 8px; border-radius: 12px; white-space: nowrap; flex-shrink: 0; }
 .item-edited { font-size: .65rem; opacity: .9; }
 .item-prix { font-size: .78rem; font-weight: 600; color: #4a5568; background: #edf2f7; border: 1px solid #e2e8f0; border-radius: 10px; padding: 2px 7px; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 2px; }
+.item-prix-best { background: #c6f6d5; color: #1a4731; border-color: #68d391; font-weight: 800; }
+.prix-filter-btn.active { background: #276749; border-color: #276749; }
 .del-btn { background: none; border: none; cursor: pointer; font-size: 1rem; opacity: .5; padding: 4px; flex-shrink: 0; }
 .del-btn:hover { opacity: 1; }
 .edit-btn { background: none; border: none; cursor: pointer; font-size: .9rem; opacity: .45; padding: 4px; flex-shrink: 0; }
