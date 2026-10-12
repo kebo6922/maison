@@ -1399,18 +1399,31 @@ async function deleteEvent() {
   if (!editId) return;
   const evts = getEvents();
   const e = evts[editId];
-  console.log('[deleteEvent] editId=', editId, 'recurrence=', e && e.recurrence, 'occDate=', _editOccurrenceDate);
   // Si c'est un événement récurrent et qu'on a une date d'occurrence
   if (e && e.recurrence && _editOccurrenceDate) {
     const dateLabel = new Date(_editOccurrenceDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-    const choice = await showDeleteRecurringDialog(e.title || e.label || 'cet événement', dateLabel);
+    const isFirstOccurrence = _editOccurrenceDate === e.date;
+    const choice = await showDeleteRecurringDialog(e.title || e.label || 'cet événement', dateLabel, isFirstOccurrence);
     if (choice === null) return; // annulé
     if (choice === 'one') {
-      // Ajouter la date aux exceptions
-      const exceptions = e.exceptions ? { ...e.exceptions } : {};
-      exceptions[_editOccurrenceDate] = true;
-      if (window.fbUpdate) await window.fbUpdate(editId, { exceptions });
-      showToast('🗑 Occurrence supprimée');
+      if (isFirstOccurrence) {
+        // Première occurrence : avancer la date de départ à la prochaine occurrence
+        const nextDate = getNextOccurrence(e, _editOccurrenceDate);
+        if (nextDate) {
+          if (window.fbUpdate) await window.fbUpdate(editId, { date: nextDate });
+          showToast('🗑 Première occurrence supprimée');
+        } else {
+          // Pas d'occurrence suivante : supprimer tout
+          if (window.fbDelete) await window.fbDelete(editId);
+          showToast('🗑 Événement supprimé');
+        }
+      } else {
+        // Ajouter la date aux exceptions
+        const exceptions = e.exceptions ? { ...e.exceptions } : {};
+        exceptions[_editOccurrenceDate] = true;
+        if (window.fbUpdate) await window.fbUpdate(editId, { exceptions });
+        showToast('🗑 Occurrence supprimée');
+      }
       closeModal();
       return;
     }
@@ -1422,7 +1435,28 @@ async function deleteEvent() {
   closeModal();
 }
 
-function showDeleteRecurringDialog(title, dateLabel) {
+function getNextOccurrence(e, fromDate) {
+  // Cherche la prochaine date après fromDate où l'événement se produit
+  const d = new Date(fromDate + 'T00:00:00');
+  for (let i = 1; i <= 400; i++) {
+    d.setDate(d.getDate() + 1);
+    const ds = d.toISOString().slice(0, 10);
+    if (e.recurrenceFin && ds > e.recurrenceFin) return null;
+    // Vérifier manuellement sans les exceptions (on calcule juste la récurrence)
+    const base = new Date(e.date + 'T00:00:00');
+    const diff = Math.round((d - base) / 86400000);
+    let matches = false;
+    if (e.recurrence === 'hebdo')  matches = base.getDay() === d.getDay() && diff % 7  === 0;
+    if (e.recurrence === 'hebdo2') matches = base.getDay() === d.getDay() && diff % 14 === 0;
+    if (e.recurrence === 'hebdo3') matches = base.getDay() === d.getDay() && diff % 21 === 0;
+    if (e.recurrence === 'mensuel') matches = d.getDate() === base.getDate();
+    if (e.recurrence === 'annuel') matches = d.getDate() === base.getDate() && d.getMonth() === base.getMonth();
+    if (matches) return ds;
+  }
+  return null;
+}
+
+function showDeleteRecurringDialog(title, dateLabel, isFirst) {
   return new Promise(resolve => {
     // Créer un mini-dialog dans la page
     const overlay = document.createElement('div');
@@ -1439,7 +1473,7 @@ function showDeleteRecurringDialog(title, dateLabel) {
         </div>
         <div style="display:flex;flex-direction:column;gap:10px;">
           <button id="delOne" style="padding:12px 16px;background:#fff7ed;border:1.5px solid #fbd38d;border-radius:10px;font-size:0.9rem;font-weight:600;color:#744210;cursor:pointer;text-align:left;">
-            📅 Seulement le <strong>${dateLabel}</strong>
+            📅 ${isFirst ? 'Seulement la 1ère occurrence (<strong>' + dateLabel + '</strong>)' : 'Seulement le <strong>' + dateLabel + '</strong>'}
           </button>
           <button id="delAll" style="padding:12px 16px;background:#fff5f5;border:1.5px solid #fc8181;border-radius:10px;font-size:0.9rem;font-weight:600;color:#742a2a;cursor:pointer;text-align:left;">
             🔁 Toutes les occurrences (supprimer la série)
