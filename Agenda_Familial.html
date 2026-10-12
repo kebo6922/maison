@@ -909,7 +909,7 @@ function buildMultiDayBanners(ds) {
     else if (isEnd && !isStart) label = `◀ ${label}`;
     const br = isStart && isEnd ? '5px' : isStart ? '5px 0 0 5px' : isEnd ? '0 5px 5px 0' : '0';
     const occDateM = e._originalId ? e.date : null;
-    const clickAction = isVacances ? '' : `onclick="event.stopPropagation();openEdit('${e._originalId||e.id}'${occDateM?`,'${occDateM}'`:''})"`;
+    const clickAction = isVacances ? '' : 'onclick="event.stopPropagation();openEdit(\'' + (e._originalId||e.id) + '\'' + (occDateM ? ',\'' + occDateM + '\'' : '') + ')"';
     const cursor = isVacances ? 'default' : 'pointer';
     return `<div ${clickAction}
       style="background:${bgColor};border-left:3px solid ${typeColor};border-right:${isEnd?'2px solid '+typeColor:'none'};border-top:1px solid ${typeColor}55;border-bottom:1px solid ${typeColor}55;
@@ -1013,7 +1013,7 @@ function renderMobileList() {
       const isOwnerM = who.includes(currentUser) || e.createdBy === currentUser || !e.createdBy;
       const mobileTitle = (e.prive && !isOwnerM) ? '🔒 Privé' : (e.title||e.label||'');
       const occDate1 = e._originalId ? e.date : null;
-      const mobileClick = (e.prive && !isOwnerM) ? '' : `onclick="openEdit('${openId}'${occDate1?`,'${occDate1}'`:''})"`;
+      const mobileClick = (e.prive && !isOwnerM) ? '' : 'onclick="openEdit(\'' + openId + '\'' + (occDate1 ? ',\'' + occDate1 + '\'' : '') + ')"';
       html += `<div class="mobile-event-row" ${mobileClick} style="background:${mobileBg};border-left:4px solid ${color};${(e.prive&&!isOwnerM)?'cursor:default;':''}">
         <div class="mobile-event-info">
           <div class="mobile-event-title" style="color:${mobileText};">${emoji} ${mobileTitle}${recurIcon}</div>
@@ -1091,7 +1091,7 @@ function renderWeekStrip() {
       const weekOwners = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
       const weekIsOwner = !e.prive || weekOwners.includes(currentUser) || e.createdBy === currentUser || !e.createdBy;
       const occDate2 = e._originalId ? e.date : null;
-      const weekClick = weekIsOwner ? `onclick="openEdit('${openId}'${occDate2?`,'${occDate2}'`:''})"` : '';
+      const weekClick = weekIsOwner ? 'onclick="openEdit(\'' + openId + '\'' + (occDate2 ? ',\'' + occDate2 + '\'' : '') + ')"' : '';
       const weekTitle = (e.prive && !weekIsOwner) ? '🔒 Privé' : (e.title||e.label||'');
       return `<div class="week-event-chip" style="background:${chipBg};color:${chipText};border-left:3px solid ${typeColor};${e.prive&&!weekIsOwner?'cursor:default;':''}" ${weekClick} title="${weekTitle}">${eventLabel(e)}${recurIcon}</div>`;
     }).join('');
@@ -1175,7 +1175,7 @@ function buildCell(d, ds, otherMonth, isToday, evts) {
     const pillOwners = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
     const pillIsOwner = !e.prive || pillOwners.includes(currentUser) || e.createdBy === currentUser || !e.createdBy;
     const occDate3 = e._originalId ? e.date : null;
-    const pillClick = pillIsOwner ? `onclick="event.stopPropagation();openEdit('${openId}'${occDate3?`,'${occDate3}'`:''})"` : 'onclick="event.stopPropagation()"';
+    const pillClick = pillIsOwner ? 'onclick="event.stopPropagation();openEdit(\'' + openId + '\'' + (occDate3 ? ',\'' + occDate3 + '\'' : '') + ')"' : 'onclick="event.stopPropagation()"';
     return `<div class="event-pill" style="display:flex;justify-content:space-between;gap:6px;background:${pillBg};color:${pillText};border-left:3px solid ${typeColor};${e.prive&&!pillIsOwner?'cursor:default;':''}" ${pillClick}>
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${eventLabel(e)}${recurIcon}</span>
       ${who ? `<span style="flex-shrink:0;opacity:0.8;font-weight:600;">${who}</span>` : ''}
@@ -1323,7 +1323,7 @@ function openDayPopup(ds) {
     const owners = (e.author||'').split(',').map(n=>n.trim()).filter(Boolean);
     const isOwner = !e.prive || owners.includes(currentUser) || e.createdBy === currentUser || !e.createdBy;
     const occDate4 = e._originalId ? e.date : null;
-    const clickable = isOwner ? `onclick="closeDayPopup();openEdit('${openId}'${occDate4?`,'${occDate4}'`:''})"` : '';
+    const clickable = isOwner ? 'onclick="closeDayPopup();openEdit(\'' + openId + '\'' + (occDate4 ? ',\'' + occDate4 + '\'' : '') + ')"' : '';
     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px;border-radius:8px;background:${personS.bg};color:${personS.text};border-left:4px solid ${typeColor};cursor:${isOwner?'pointer':'default'};" ${clickable}>
       <span style="font-size:0.88rem;font-weight:600;">${eventLabel(e)}</span>
       ${who ? `<span style="font-size:0.75rem;font-weight:700;opacity:0.8;">${who}</span>` : ''}
