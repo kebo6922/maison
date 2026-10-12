@@ -173,14 +173,12 @@
     const list = document.getElementById('itemList');
     if(!list) return;
 
-    // Calcul "isBestPrice" pour chaque article (magasin habituel = le moins cher parmi les prix renseignés)
-    function isBestPrice(item) {
-      if (!item.prix || typeof item.prix !== 'object') return false;
-      const entries = Object.entries(item.prix).map(([,v])=>parseFloat(v)).filter(v=>!isNaN(v));
-      if (entries.length < 2) return false;
-      const magPrix = item.magasin && item.prix[item.magasin] != null ? parseFloat(item.prix[item.magasin]) : null;
-      if (magPrix === null) return false;
-      return magPrix === Math.min(...entries);
+    // Retourne {mid, prix} du magasin le moins cher pour un article (parmi tous les prix renseignés)
+    function getBestShop(item) {
+      if (!item.prix || typeof item.prix !== 'object') return null;
+      const entries = Object.entries(item.prix).map(([mid,v])=>({mid,v:parseFloat(v)})).filter(e=>!isNaN(e.v));
+      if (entries.length === 0) return null;
+      return entries.reduce((best, e) => e.v < best.v ? e : best);
     }
 
     // Filtrer par magasin, état coché, et filtre prix
@@ -188,7 +186,7 @@
       if (activeShopFilter && (item.magasin || '') !== activeShopFilter) return false;
       if (activeDoneFilter === 'todo' && item.done) return false;
       if (activeDoneFilter === 'done' && !item.done) return false;
-      if (activePrixFilter && !isBestPrice(item)) return false;
+      if (activePrixFilter && !getBestShop(item)) return false; // n'affiche que ceux qui ont des prix
       return true;
     });
 
@@ -228,27 +226,23 @@
           ? '<span class="item-author item-edited" style="background:'+pcE.bg+';color:'+pcE.text+';border:1px solid '+pcE.border+';" title="Modifié par '+item.editedBy+'">✏️ '+item.editedBy+'</span>'
           : '';
 
-        // Badge prix : affiche le prix du magasin habituel + vert si moins cher + comparatif
+        // Badge prix : toujours afficher le moins cher + quel magasin + comparatif si plusieurs
         let prixBadge = '';
         if (item.prix && typeof item.prix === 'object') {
           const prixEntries = Object.entries(item.prix).map(([mid,v])=>({mid,v:parseFloat(v)})).filter(e=>!isNaN(e.v));
           if (prixEntries.length > 0) {
-            const magPrix = item.magasin && item.prix[item.magasin] != null
-              ? parseFloat(item.prix[item.magasin]) : null;
-            const minPrix = Math.min(...prixEntries.map(e=>e.v));
-            const isPromo = item.promos && item.magasin && item.promos[item.magasin];
-            const isBest = magPrix !== null && magPrix === minPrix && prixEntries.length > 1;
-            const displayPrix = magPrix !== null ? magPrix : minPrix;
+            const best = prixEntries.reduce((b,e) => e.v < b.v ? e : b);
+            const isPromo = item.promos && item.promos[best.mid];
             const promoTag = isPromo ? '🏷️ ' : '';
+            const bestMag = getMagasinInfo(best.mid);
             const multiBtn = prixEntries.length > 1
-              ? '<button onclick="showPrixComparatif(\''+item.id+'\')" title="Comparer les prix" style="background:none;border:none;cursor:pointer;font-size:0.75rem;padding:0 0 0 3px;line-height:1;opacity:0.7;">📊</button>'
+              ? '<button onclick="showPrixComparatif(\''+item.id+'\')" title="Comparer les prix" style="background:none;border:none;cursor:pointer;font-size:0.75rem;padding:0 0 0 3px;line-height:1;opacity:0.8;">📊</button>'
               : '';
-            if (isBest) {
-              // Vert vif + icône ✓ bien visible
-              prixBadge = '<span class="item-prix item-prix-best">'+promoTag+'💚 '+displayPrix.toFixed(2)+' €'+multiBtn+'</span>';
-            } else {
-              prixBadge = '<span class="item-prix">'+promoTag+displayPrix.toFixed(2)+' €'+multiBtn+'</span>';
-            }
+            // Badge vert avec le magasin le moins cher + son logo
+            const logoHtml = bestMag.logo
+              ? '<img src="'+bestMag.logo+'" width="13" height="13" style="border-radius:2px;object-fit:contain;vertical-align:middle;margin-right:2px;" onerror="this.style.display=\'none\'">'
+              : '';
+            prixBadge = '<span class="item-prix item-prix-best">'+promoTag+logoHtml+best.v.toFixed(2)+' €'+multiBtn+'</span>';
           }
         }
 
