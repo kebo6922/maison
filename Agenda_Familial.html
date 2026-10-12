@@ -1399,6 +1399,7 @@ async function deleteEvent() {
   if (!editId) return;
   const evts = getEvents();
   const e = evts[editId];
+  console.log('[deleteEvent] editId=', editId, 'recurrence=', e && e.recurrence, 'occDate=', _editOccurrenceDate);
   // Si c'est un événement récurrent et qu'on a une date d'occurrence
   if (e && e.recurrence && _editOccurrenceDate) {
     const dateLabel = new Date(_editOccurrenceDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
