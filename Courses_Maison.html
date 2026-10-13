@@ -200,9 +200,12 @@
       if(!byCategory[cat]) byCategory[cat]=[];
       byCategory[cat].push({id,...item});
     });
-    // Tri alphabétique des articles dans chaque catégorie
+    // Tri : non-cochés alphabétiquement, puis cochés alphabétiquement
     Object.keys(byCategory).forEach(cat => {
-      byCategory[cat].sort((a,b) => (a.name||'').localeCompare(b.name||'', 'fr', {sensitivity:'base'}));
+      byCategory[cat].sort((a,b) => {
+        if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+        return (a.name||'').localeCompare(b.name||'', 'fr', {sensitivity:'base'});
+      });
     });
 
     // Compter total non cochés (sur tous les articles, pas filtrés)
