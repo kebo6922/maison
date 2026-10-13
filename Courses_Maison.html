@@ -66,7 +66,7 @@
     Bibi:   { bg:'#c6f6d5', text:'#1a4731', border:'#68d391' }
   };
   const MEMBERS_LIST = ['Machin','Bidule','Bibi'];
-  const CATEGORIES = ['🥦 Légumes','🍖 Viande/Poisson','🧀 Crèmerie','🥐 Boulangerie','🥫 Épicerie','🧴 Hygiène','🍷 Boissons','❄️ Surgelés','🧹 Entretien','🛒 Autre'];
+  const CATEGORIES = ['🥦 Légumes','🍖 Viande/Poisson','🧀 Crèmerie','🥐 Boulangerie','🥫 Épicerie','🧴 Hygiène','🍷 Boissons','❄️ Surgelés','🧹 Entretien','🐾 Animaux','🛒 Autre'];
 
   let currentUser = localStorage.getItem('pmUser') || '';
   let items = {};
@@ -199,6 +199,10 @@
       const cat = item.category || '🛒 Autre';
       if(!byCategory[cat]) byCategory[cat]=[];
       byCategory[cat].push({id,...item});
+    });
+    // Tri alphabétique des articles dans chaque catégorie
+    Object.keys(byCategory).forEach(cat => {
+      byCategory[cat].sort((a,b) => (a.name||'').localeCompare(b.name||'', 'fr', {sensitivity:'base'}));
     });
 
     // Compter total non cochés (sur tous les articles, pas filtrés)
