@@ -66,7 +66,7 @@
     Bibi:   { bg:'#c6f6d5', text:'#1a4731', border:'#68d391' }
   };
   const MEMBERS_LIST = ['Machin','Bidule','Bibi'];
-  const CATEGORIES = ['🥦 Légumes','🍖 Viande/Poisson','🧀 Crèmerie','🥐 Boulangerie','🥫 Épicerie','🧴 Hygiène','🍷 Boissons','❄️ Surgelés','🧹 Entretien','🐾 Animaux','🛒 Autre'];
+  const CATEGORIES = ['🐾 Animaux','🍷 Boissons','🥐 Boulangerie','🧀 Crèmerie','🧹 Entretien','🥫 Épicerie','🧴 Hygiène','🥦 Légumes','❄️ Surgelés','🍖 Viande/Poisson','🛒 Autre'];
 
   let currentUser = localStorage.getItem('pmUser') || '';
   let items = {};
@@ -679,16 +679,17 @@ body { background: var(--bg); color: var(--fg); font-family: -apple-system, Blin
   <input type="text" id="newItemName" placeholder="Article à ajouter…" autocomplete="off" list="articleSuggestions" oninput="onArticleInput()">
   <input type="text" id="newItemQty"  placeholder="Qté (ex: 2L)">
   <select id="newItemCat">
-    <option value="🛒 Autre">🛒 Autre</option>
-    <option value="🥦 Légumes">🥦 Légumes</option>
-    <option value="🍖 Viande/Poisson">🍖 Viande/Poisson</option>
-    <option value="🧀 Crèmerie">🧀 Crèmerie</option>
+    <option value="🐾 Animaux">🐾 Animaux</option>
+    <option value="🍷 Boissons">🍷 Boissons</option>
     <option value="🥐 Boulangerie">🥐 Boulangerie</option>
+    <option value="🧀 Crèmerie">🧀 Crèmerie</option>
+    <option value="🧹 Entretien">🧹 Entretien</option>
     <option value="🥫 Épicerie">🥫 Épicerie</option>
     <option value="🧴 Hygiène">🧴 Hygiène</option>
-    <option value="🍷 Boissons">🍷 Boissons</option>
+    <option value="🥦 Légumes">🥦 Légumes</option>
     <option value="❄️ Surgelés">❄️ Surgelés</option>
-    <option value="🧹 Entretien">🧹 Entretien</option>
+    <option value="🍖 Viande/Poisson">🍖 Viande/Poisson</option>
+    <option value="🛒 Autre">🛒 Autre</option>
   </select>
   <select id="newItemShop">
     <option value="">🛒 Magasin…</option>
@@ -721,16 +722,17 @@ body { background: var(--bg); color: var(--fg); font-family: -apple-system, Blin
     <input type="text" id="editItemQty" placeholder="Ex: 2L, 500g…" onkeydown="if(event.key==='Enter')saveEditItem()">
     <label>Catégorie</label>
     <select id="editItemCat">
-      <option value="🛒 Autre">🛒 Autre</option>
-      <option value="🥦 Légumes">🥦 Légumes</option>
-      <option value="🍖 Viande/Poisson">🍖 Viande/Poisson</option>
-      <option value="🧀 Crèmerie">🧀 Crèmerie</option>
+      <option value="🐾 Animaux">🐾 Animaux</option>
+      <option value="🍷 Boissons">🍷 Boissons</option>
       <option value="🥐 Boulangerie">🥐 Boulangerie</option>
+      <option value="🧀 Crèmerie">🧀 Crèmerie</option>
+      <option value="🧹 Entretien">🧹 Entretien</option>
       <option value="🥫 Épicerie">🥫 Épicerie</option>
       <option value="🧴 Hygiène">🧴 Hygiène</option>
-      <option value="🍷 Boissons">🍷 Boissons</option>
+      <option value="🥦 Légumes">🥦 Légumes</option>
       <option value="❄️ Surgelés">❄️ Surgelés</option>
-      <option value="🧹 Entretien">🧹 Entretien</option>
+      <option value="🍖 Viande/Poisson">🍖 Viande/Poisson</option>
+      <option value="🛒 Autre">🛒 Autre</option>
     </select>
     <label>Magasin habituel</label>
     <select id="editItemShop">
