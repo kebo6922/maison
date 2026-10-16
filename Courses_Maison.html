@@ -464,8 +464,29 @@
   window.onArticleInput = onArticleInput;
 
   // Écoute Firebase temps réel
+  // Table de migration : anciens noms → nouveaux noms de catégories
+  const CAT_MIGRATION = {
+    '🥦 Légumes':      '🥦 Fruits/Légumes',
+    '🥬 Légumes':      '🥦 Fruits/Légumes',
+    'Légumes':         '🥦 Fruits/Légumes',
+    '🥫 Épicerie':     '🥫 Épicerie salée',
+    'Épicerie':        '🥫 Épicerie salée',
+    '🍬 Épicerie sucrée / salée': '🍬 Épicerie sucrée',
+    '🥫 Épicerie sucrée / salée': '🥫 Épicerie salée',
+  };
+
   onValue(coursesRef, snap=>{
     items = snap.val()||{};
+    // Migration automatique des anciennes catégories
+    const migrations = [];
+    Object.entries(items).forEach(([id, item]) => {
+      const newCat = CAT_MIGRATION[item.category];
+      if (newCat) {
+        items[id] = { ...item, category: newCat };
+        migrations.push(update(ref(db, `maison/courses/${id}`), { category: newCat }));
+      }
+    });
+    if (migrations.length) Promise.all(migrations);
     render();
   });
 
