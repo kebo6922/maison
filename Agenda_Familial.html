@@ -266,7 +266,7 @@ body.dark .btn-cancel { background: #4a5568; color: #e2e8f0; }
 .mobile-list { display: none; padding: 0 0 80px 0; }
 .mobile-month-nav {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px; background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;
+  padding: 12px 16px; background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: var(--header-h, 56px); z-index: 10;
 }
 .mobile-month-nav h2 { font-size: 1rem; font-weight: 700; text-transform: capitalize; }
 .mobile-month-nav .nav-btns { display: flex; gap: 6px; }
@@ -564,6 +564,11 @@ self.addEventListener('fetch',e=>{
     <div style="display:flex;align-items:center;gap:8px;margin:8px 0;">
       <input type="checkbox" id="evPrive" style="width:16px;height:16px;cursor:pointer;" />
       <label for="evPrive" style="margin:0;cursor:pointer;font-weight:500;">🔒 Privé — titre masqué pour les autres</label>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;margin:8px 0;">
+      <input type="checkbox" id="evVisiblePlanning" style="width:16px;height:16px;cursor:pointer;" checked />
+      <label for="evVisiblePlanning" style="margin:0;cursor:pointer;font-weight:500;">📋 Visible sur le planning</label>
     </div>
 
     <label>🔗 Lien / Pièce jointe</label>
@@ -943,6 +948,9 @@ function eventLabel(e) {
 // RENDER
 // ═══════════════════════════════════════════════════════
 function renderAll() {
+  // Ajuster le top sticky de la nav mobile selon la hauteur réelle du header
+  const hdr = document.querySelector('header');
+  if (hdr) document.documentElement.style.setProperty('--header-h', hdr.offsetHeight + 'px');
   renderWeekStrip();
   renderCalendar();
   renderMobileList();
@@ -1255,6 +1263,7 @@ function openAdd(dateStr) {
   document.getElementById('evLieu').value = '';
   document.getElementById('evUrl').value = '';
   document.getElementById('evPrive').checked = false;
+  document.getElementById('evVisiblePlanning').checked = true;
   document.getElementById('btnDelete').style.display = 'none';
   document.getElementById('commentsSection').style.display = 'none';
   buildAssignChecks(currentUser ? [currentUser] : []);
@@ -1298,6 +1307,7 @@ function openEdit(id, occurrenceDate) {
   document.getElementById('evLieu').value = e.lieu || '';
   document.getElementById('evUrl').value = e.url || '';
   document.getElementById('evPrive').checked = !!e.prive;
+  document.getElementById('evVisiblePlanning').checked = e.visiblePlanning !== false; // true par défaut
   document.getElementById('btnDelete').style.display = 'inline-block';
 
   const assigned = (e.author || '').split(',').map(n => n.trim()).filter(Boolean);
@@ -1362,6 +1372,7 @@ async function saveEvent() {
   const lieu   = document.getElementById('evLieu').value.trim();
   const url    = document.getElementById('evUrl').value.trim();
   const prive  = document.getElementById('evPrive').checked;
+  const visiblePlanning = document.getElementById('evVisiblePlanning').checked;
   const author = [...document.querySelectorAll('#assignChecks input[type=checkbox]:checked')]
                    .map(cb => cb.value).join(', ');
 
@@ -1373,7 +1384,7 @@ async function saveEvent() {
     const isFromPlanning = existing && existing.cat !== 'agenda';
     const updateData = isFromPlanning
       ? { title, date, dateFin, time, timeEnd, notes, lieu, author, recurrence, recurrenceN, recurrenceFin, cat: type === 'rdv' ? 'rdv' : existing.cat }
-      : { title, date, dateFin, time, timeEnd, type: type, evType: type, notes, lieu, url, prive, author, recurrence, recurrenceN, recurrenceFin };
+      : { title, date, dateFin, time, timeEnd, type: type, evType: type, notes, lieu, url, prive, visiblePlanning, author, recurrence, recurrenceN, recurrenceFin };
     if (window.fbUpdate) await window.fbUpdate(editId, updateData);
     showToast('✅ Événement mis à jour');
   } else {
@@ -1383,7 +1394,7 @@ async function saveEvent() {
       cat: 'agenda',
       type: type,
       evType: type,
-      notes, lieu, url, prive, author, recurrence, recurrenceN, recurrenceFin,
+      notes, lieu, url, prive, visiblePlanning, author, recurrence, recurrenceN, recurrenceFin,
       createdBy: currentUser || '',
       status: 'rdv',          // Pour qu'il apparaisse aussi dans le planning maison
       prio: 'moyenne',
