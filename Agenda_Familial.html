@@ -1206,6 +1206,7 @@ function changeMonth(delta) {
   if (viewMonth > 11) { viewMonth = 0; viewYear++; }
   if (viewMonth < 0)  { viewMonth = 11; viewYear--; }
   renderCalendar();
+  renderMobileList();
 }
 
 function goToday() {
@@ -1213,6 +1214,7 @@ function goToday() {
   viewYear  = now.getFullYear();
   viewMonth = now.getMonth();
   renderCalendar();
+  renderMobileList();
 }
 
 // ═══════════════════════════════════════════════════════
