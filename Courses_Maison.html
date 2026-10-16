@@ -129,6 +129,7 @@
   let activeShopFilter = '';
   let activeDoneFilter = ''; // '' = tout, 'todo' = non cochés, 'done' = cochés
   let activePrixFilter = false; // true = afficher seulement les moins chers
+  let activeCatFilter = ''; // '' = toutes catégories
 
   function renderShopFilters() {
     const el = document.getElementById('shopFilters');
@@ -149,7 +150,12 @@
       `<button class="shop-filter-btn done-filter-btn${activeDoneFilter===f.id?' active':''}" onclick="setDoneFilter('${f.id}')">${f.label}</button>`
     ).join('');
     const prixBtn = '<button class="shop-filter-btn done-filter-btn prix-filter-btn'+(activePrixFilter?' active':'')+'" onclick="togglePrixFilter()">💚 Moins chers</button>';
-    el.innerHTML = shopBtns + '<span class="filter-sep"></span>' + doneBtns + '<span class="filter-sep"></span>' + prixBtn;
+    // Menu déroulant catégorie
+    const catOptions = ['<option value="">🗂️ Toutes catégories</option>']
+      .concat(CATEGORIES.map(c => `<option value="${c}"${activeCatFilter===c?' selected':''}>${c}</option>`))
+      .join('');
+    const catSelect = `<select class="cat-filter-select" onchange="setCatFilter(this.value)">${catOptions}</select>`;
+    el.innerHTML = shopBtns + '<span class="filter-sep"></span>' + doneBtns + '<span class="filter-sep"></span>' + prixBtn + '<span class="filter-sep"></span>' + catSelect;
   }
   window.setShopFilter = function(id) {
     activeShopFilter = id;
@@ -163,6 +169,11 @@
   };
   window.togglePrixFilter = function() {
     activePrixFilter = !activePrixFilter;
+    renderShopFilters();
+    render();
+  };
+  window.setCatFilter = function(val) {
+    activeCatFilter = val;
     renderShopFilters();
     render();
   };
@@ -181,12 +192,13 @@
       return entries.reduce((best, e) => e.v < best.v ? e : best);
     }
 
-    // Filtrer par magasin, état coché, et filtre prix
+    // Filtrer par magasin, état coché, filtre prix et catégorie
     const filteredItems = Object.entries(items).filter(([id,item])=>{
       if (activeShopFilter && (item.magasin || '') !== activeShopFilter) return false;
       if (activeDoneFilter === 'todo' && item.done) return false;
       if (activeDoneFilter === 'done' && !item.done) return false;
       if (activePrixFilter && !getBestShop(item)) return false; // n'affiche que ceux qui ont des prix
+      if (activeCatFilter && (item.category || '🛒 Autre') !== activeCatFilter) return false;
       return true;
     });
 
@@ -624,6 +636,13 @@ body { background: var(--bg); color: var(--fg); font-family: -apple-system, Blin
 }
 .done-filter-btn.active { background: #38a169; border-color: #38a169; }
 .filter-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; margin: 0 4px; }
+.cat-filter-select {
+  height: 32px; padding: 0 8px; border-radius: 16px; border: 1.5px solid var(--border);
+  background: var(--card); color: var(--text); font-size: 0.82rem; cursor: pointer;
+  outline: none; flex-shrink: 0; max-width: 170px;
+}
+.cat-filter-select:focus { border-color: var(--primary); }
+body.dark .cat-filter-select { background: #2d3748; color: #e2e8f0; border-color: #4a5568; }
 
 /* LISTE */
 #itemList { padding: 0 12px 80px; }
