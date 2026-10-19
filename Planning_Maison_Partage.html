@@ -73,6 +73,17 @@
         window._tasks[child.key] = { id: child.key, ...child.val() };
       });
     }
+    // Archivage automatique : RDV dont la date est passée → done
+    const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
+    Object.values(window._tasks).forEach(t => {
+      if (t.status === 'rdv' && t.date) {
+        const rdvDate = new Date(t.date + 'T00:00:00');
+        if (rdvDate < todayMidnight) {
+          // Passer en "done" dans Firebase (silencieux, pas de re-render supplémentaire)
+          update(ref(db, `planning/tasks/${t.id}`), { status: 'done' });
+        }
+      }
+    });
     render();
   });
 
