@@ -390,10 +390,25 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Colonnes en vertical */
-  .columns { flex-direction: column; padding: 10px; gap: 10px; padding-bottom: 80px; }
-  .col { min-width: unset; }
-  /* Titre de colonne sticky dans son conteneur pour rester visible en scrollant */
+  /* Colonnes en scroll horizontal — même vue que PC */
+  .columns {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    padding: 10px 10px 80px 10px;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .columns::-webkit-scrollbar { display: none; }
+  .col {
+    min-width: 78vw;
+    max-width: 78vw;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+  /* Titre de colonne sticky dans son conteneur */
   .col-title { position: sticky; top: 0; background: white; z-index: 5; padding: 6px 0; margin-bottom: 8px; }
   body.dark .col-title { background: #2d3748; }
   .stats { padding: 10px; flex-wrap: wrap; gap: 8px; }
@@ -414,6 +429,37 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
   .task-title { font-size: 0.95rem; }
   /* Toast au-dessus du FAB */
   .toast { bottom: 88px; }
+}
+
+/* ── Dots navigation colonnes (mobile) ───────────────────────── */
+.col-dots {
+  display: none;
+}
+@media (max-width: 768px) {
+  .col-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 0 4px;
+    background: var(--surface, white);
+    border-bottom: 1px solid #e2e8f0;
+  }
+  body.dark .col-dots { background: #2d3748; border-color: #4a5568; }
+  .col-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #cbd5e0;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    border: none;
+  }
+  .col-dot.active {
+    background: #667eea;
+    transform: scale(1.35);
+  }
+  body.dark .col-dot { background: #4a5568; }
+  body.dark .col-dot.active { background: #667eea; }
 }
 
 /* Bannière rappels du jour */
@@ -630,7 +676,15 @@ self.addEventListener('fetch',e=>{
 
 </div>
 
-<div class="columns">
+<div id="col-dots" class="col-dots">
+  <span class="col-dot active" data-col="col-rdv"      title="Rendez-vous"></span>
+  <span class="col-dot"        data-col="col-todo"     title="À faire"></span>
+  <span class="col-dot"        data-col="col-progress" title="En cours"></span>
+  <span class="col-dot"        data-col="col-done"     title="Terminées"></span>
+  <span class="col-dot"        data-col="col-ideas"    title="Idées"></span>
+</div>
+
+<div class="columns" id="columnsWrap">
   <div class="col col-rdv"      id="col-rdv"      ondragover="allowDrop(event)" ondrop="drop(event,'rdv')">
     <div class="col-title" style="color:#2b6cb0;">📅 Rendez-vous <span class="col-count" id="cnt-rdv">0</span></div>
     <div id="tasks-rdv"></div>
@@ -819,6 +873,37 @@ function updateMemberSelect(membersRaw) {
     }
   });
 }
+
+// ── Dots de navigation colonnes (mobile) ──────────────────────
+(function initColDots() {
+  const wrap = document.getElementById('columnsWrap');
+  const dots = document.querySelectorAll('.col-dot');
+  if (!wrap || !dots.length) return;
+
+  // Clic sur un dot → scroll vers la colonne
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      const target = document.getElementById(dot.dataset.col);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+    });
+  });
+
+  // Scroll → met à jour le dot actif
+  let scrollTimer;
+  wrap.addEventListener('scroll', () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      const cols = Array.from(document.querySelectorAll('.col'));
+      let closestIdx = 0;
+      let minDist = Infinity;
+      cols.forEach((col, i) => {
+        const dist = Math.abs(col.getBoundingClientRect().left - wrap.getBoundingClientRect().left);
+        if (dist < minDist) { minDist = dist; closestIdx = i; }
+      });
+      dots.forEach((d, i) => d.classList.toggle('active', i === closestIdx));
+    }, 50);
+  }, { passive: true });
+})();
 
 // Initialiser le menu membres au chargement
 (function initMemberSelect() {
