@@ -105,6 +105,81 @@
   window._pmFbCommentsRef  = (eventId) => ref(db, `maison/comments/${eventId}`);
   window._pmFbOnValue      = onValue;
   window._pmFbCommentsPush = (eventId, data) => push(ref(db, `maison/comments/${eventId}`), data);
+
+  // ── Log connexions + alerte appareil inconnu ─────────────────
+  const MEMBRES_CONNUS = ['Machin','Bidule','Bibi'];
+  function getDeviceId() {
+    let did = localStorage.getItem('pmDeviceId');
+    if (!did) {
+      did = 'dev_' + Math.random().toString(36).slice(2,10) + '_' + Date.now().toString(36);
+      localStorage.setItem('pmDeviceId', did);
+    }
+    return did;
+  }
+  window._logConnexion = async function(userName) {
+    const deviceId  = getDeviceId();
+    const deviceName = navigator.userAgent.includes('Mobile') ? '📱 Mobile' : '💻 PC';
+    const now = new Date().toISOString();
+    const connRef = ref(db, `maison/connexions/${deviceId}`);
+    // Lire l'historique de cet appareil
+    const { get } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js').catch(()=>({get:null}));
+    let isNew = false;
+    if (get) {
+      try {
+        const snap = await get(connRef);
+        isNew = !snap.exists(); // première fois pour cet appareil
+      } catch(e) { isNew = false; }
+    }
+    // Enregistrer la connexion
+    await update(connRef, { user: userName, deviceId, deviceName, lastSeen: now, page: 'Planning' }).catch(()=>{});
+    // Alerte email si appareil inconnu
+    if (isNew && typeof emailjs !== 'undefined') {
+      try {
+        const cfg2 = Object.assign({}, { ejsSvcId:'service_wnsnv9a', ejsTplId:'template_mmk7cw5', ejsPubKey:'wO8gbKkcO-SajxpTM' },
+          JSON.parse(localStorage.getItem('pmConfig')||'{}'));
+        emailjs.init(cfg2.ejsPubKey);
+        emailjs.send(cfg2.ejsSvcId, cfg2.ejsTplId, {
+          subject: '🔔 Maison — Nouvel appareil connecté',
+          message: `Nouvel appareil détecté sur le Planning Maison !\n\nUtilisateur : ${userName}\nAppareil : ${deviceName}\nID : ${deviceId}\nDate : ${new Date().toLocaleString('fr-FR')}\nNavigateur : ${navigator.userAgent.substring(0,80)}\n\nSi ce n'est pas vous, changez le mot de passe.`,
+          to_name: 'Famille',
+          from_name: 'Planning Maison'
+        });
+      } catch(e) {}
+    }
+  };
+
+  // ── Export sauvegarde JSON ────────────────────────────────────
+  window._exportBackup = async function() {
+    try {
+      const { get } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+      const [snapPlanning, snapCourses, snapComments, snapConnexions] = await Promise.all([
+        get(ref(db, 'planning')),        // Planning + Agenda (même base planning/tasks)
+        get(ref(db, 'maison/courses')),  // Courses
+        get(ref(db, 'maison/comments')), // Commentaires agenda
+        get(ref(db, 'maison/connexions'))
+      ]);
+      const backup = {
+        exportDate: new Date().toISOString(),
+        exportBy: localStorage.getItem('pmUser') || 'inconnu',
+        planning_et_agenda: snapPlanning.val() || {},
+        courses:            snapCourses.val()  || {},
+        commentaires:       snapComments.val() || {},
+        connexions:         snapConnexions.val() || {}
+      };
+      const json = JSON.stringify(backup, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      const d    = new Date();
+      a.href     = url;
+      a.download = `maison_backup_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      if (typeof toast === 'function') toast('💾 Sauvegarde téléchargée !');
+    } catch(e) {
+      alert('Erreur export : ' + e.message);
+    }
+  };
 </script>
 
 <!-- EmailJS pour les alertes mail -->
@@ -396,11 +471,29 @@ body.dark .filter-btn { background: #3a4a5c; border-color: #4a5568; color: #e2e8
   document.head.appendChild(link);
   if('serviceWorker' in navigator){
     const sw = `
-self.addEventListener('install',e=>{self.skipWaiting();});
-self.addEventListener('activate',e=>{e.waitUntil(clients.claim());});
+const CACHE='maison-planning-v1';
+const PRECACHE=[
+  '/maison/Planning_Maison_Partage.html',
+  'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js',
+  'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js',
+  'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js'
+];
+self.addEventListener('install',e=>{
+  e.waitUntil(caches.open(CACHE).then(c=>Promise.allSettled(PRECACHE.map(u=>c.add(u).catch(()=>{})))).then(()=>self.skipWaiting()));
+});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>clients.claim()));
+});
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
-  e.respondWith(fetch(e.request).catch(()=>new Response('Hors ligne',{status:503})));
+  if(e.request.url.includes('firebasedatabase.app'))return;
+  e.respondWith(fetch(e.request).then(r=>{
+    if(r&&r.status===200&&r.type!=='opaque'){const c=r.clone();caches.open(CACHE).then(ca=>ca.put(e.request,c));}
+    return r;
+  }).catch(()=>caches.match(e.request).then(c=>{
+    if(c)return c;
+    if(e.request.mode==='navigate')return caches.match('/maison/Planning_Maison_Partage.html');
+  })));
 });
 `;
     const swBlob = new Blob([sw],{type:'text/javascript'});
@@ -432,6 +525,7 @@ self.addEventListener('fetch',e=>{
     <span id="pmUserBadge" onclick="switchProfile()" title="Changer de profil" class="nav-link" style="cursor:pointer;">👤 ?</span>
     <button class="btn-hdr" onclick="changePin(currentUser)" title="Changer mon PIN">🔑</button>
     <button class="btn-hdr" onclick="toggleDark()" id="darkBtn">🌙</button>
+    <button class="btn-hdr" onclick="window._exportBackup && window._exportBackup()" title="Télécharger une sauvegarde JSON">💾</button>
     <button class="btn-hdr" onclick="openConfig()">⚙</button>
   </div>
 </header>
@@ -815,6 +909,7 @@ function switchProfile() {
     currentUser = match;
     updatePmUserBadge();
     render();
+    if (window._logConnexion) window._logConnexion(match);
   });
 }
 
@@ -829,8 +924,12 @@ if (!currentUser) {
       currentUser = match;
       updatePmUserBadge();
       render();
+      if (window._logConnexion) window._logConnexion(match);
     });
   }, 500);
+} else {
+  // Utilisateur déjà connecté — log silencieux sans alerte email
+  setTimeout(() => { if (window._logConnexion) window._logConnexion(currentUser); }, 1000);
 }
 
 // Date

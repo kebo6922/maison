@@ -367,11 +367,28 @@ body.dark .btn-cancel { background: #4a5568; color: #e2e8f0; }
   document.head.appendChild(link);
   if('serviceWorker' in navigator){
     const sw = `
-self.addEventListener('install',e=>{self.skipWaiting();});
-self.addEventListener('activate',e=>{e.waitUntil(clients.claim());});
+const CACHE='maison-agenda-v1';
+const PRECACHE=[
+  '/maison/Agenda_Familial.html',
+  'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js',
+  'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js'
+];
+self.addEventListener('install',e=>{
+  e.waitUntil(caches.open(CACHE).then(c=>Promise.allSettled(PRECACHE.map(u=>c.add(u).catch(()=>{})))).then(()=>self.skipWaiting()));
+});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>clients.claim()));
+});
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
-  e.respondWith(fetch(e.request).catch(()=>new Response('Hors ligne',{status:503})));
+  if(e.request.url.includes('firebasedatabase.app'))return;
+  e.respondWith(fetch(e.request).then(r=>{
+    if(r&&r.status===200&&r.type!=='opaque'){const c=r.clone();caches.open(CACHE).then(ca=>ca.put(e.request,c));}
+    return r;
+  }).catch(()=>caches.match(e.request).then(c=>{
+    if(c)return c;
+    if(e.request.mode==='navigate')return caches.match('/maison/Agenda_Familial.html');
+  })));
 });
 `;
     const swBlob = new Blob([sw],{type:'text/javascript'});

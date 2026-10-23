@@ -11,6 +11,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Courses">
 <script>
+// Enregistrement Service Worker (cache offline)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw-courses.js').catch(() => {});
+  });
+}
 (function(){
   const MOT_DE_PASSE = 'Maison05';
   const CLE = 'maison_auth';
@@ -679,9 +685,16 @@ body.dark .cat-filter-select { background: #2d3748; color: #e2e8f0; border-color
   z-index: 1000; align-items: center; justify-content: center; padding: 16px;
 }
 .edit-modal {
-  background: var(--surface); border-radius: 16px; padding: 24px;
+  background: var(--surface); border-radius: 16px;
   width: 100%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,.2);
-  max-height: 90dvh; overflow-y: auto; overscroll-behavior: contain;
+  max-height: 90dvh; display: flex; flex-direction: column; overscroll-behavior: contain;
+}
+.edit-modal-body {
+  padding: 24px 24px 0; overflow-y: auto; flex: 1; overscroll-behavior: contain;
+}
+.edit-modal-btns {
+  padding: 12px 24px 16px; border-top: 1px solid var(--border);
+  background: var(--surface); border-radius: 0 0 16px 16px; flex-shrink: 0;
 }
 .edit-modal h3 { margin: 0 0 16px; font-size: 1rem; color: var(--fg); }
 .edit-modal label { font-size: .8rem; color: var(--fg2); display: block; margin-bottom: 4px; margin-top: 12px; }
@@ -690,7 +703,7 @@ body.dark .cat-filter-select { background: #2d3748; color: #e2e8f0; border-color
   border-radius: 8px; font-size: .95rem; background: var(--bg);
   color: var(--fg); box-sizing: border-box;
 }
-.edit-modal-btns { display: flex; gap: 8px; margin-top: 20px; }
+.edit-modal-btns { display: flex; gap: 8px; margin-top: 0; }
 .edit-modal-btns button { flex: 1; padding: 11px; border: none; border-radius: 8px; font-size: .95rem; font-weight: 700; cursor: pointer; }
 .edit-del-btn { background: #fed7d7; color: #c53030; }
 .edit-del-btn:hover { background: #feb2b2; }
@@ -762,52 +775,53 @@ body.dark .cat-filter-select { background: #2d3748; color: #e2e8f0; border-color
 <!-- Modale édition article -->
 <div class="edit-modal-overlay" id="editItemModal" onclick="if(event.target===this)closeEditItem()">
   <div class="edit-modal">
-    <h3>✏️ Modifier l'article</h3>
-    <input type="hidden" id="editItemId">
-    <label>Nom</label>
-    <input type="text" id="editItemName" placeholder="Nom de l'article" onkeydown="if(event.key==='Enter')saveEditItem()">
-    <label>Quantité</label>
-    <input type="text" id="editItemQty" placeholder="Ex: 2L, 500g…" onkeydown="if(event.key==='Enter')saveEditItem()">
-    <label>Catégorie</label>
-    <select id="editItemCat">
-      <option value="🐾 Animaux">🐾 Animaux</option>
-      <option value="🍷 Boissons">🍷 Boissons</option>
-      <option value="🥐 Boulangerie">🥐 Boulangerie</option>
-      <option value="🧀 Crèmerie">🧀 Crèmerie</option>
-      <option value="🧹 Entretien">🧹 Entretien</option>
-      <option value="🥫 Épicerie salée">🥫 Épicerie salée</option>
-      <option value="🍬 Épicerie sucrée">🍬 Épicerie sucrée</option>
-      <option value="🥦 Fruits/Légumes">🥦 Fruits/Légumes</option>
-      <option value="🧴 Hygiène">🧴 Hygiène</option>
-      <option value="🔧 Matériel">🔧 Matériel</option>
-      <option value="💊 Parapharmacie">💊 Parapharmacie</option>
-      <option value="🥩 Produits frais/Charcuterie">🥩 Produits frais/Charcuterie</option>
-      <option value="❄️ Surgelés">❄️ Surgelés</option>
-      <option value="🍖 Viande/Poisson">🍖 Viande/Poisson</option>
-      <option value="🛒 Autre">🛒 Autre</option>
-    </select>
-    <label>Magasin habituel</label>
-    <select id="editItemShop">
-      <option value="">🛒 Magasin…</option>
-      <option value="leclerc">Leclerc</option>
-      <option value="intermarche">Intermarché</option>
-      <option value="lidl">Lidl</option>
-      <option value="aldi">Aldi</option>
-      <option value="carrefour">Carrefour</option>
-      <option value="biocoop">Biocoop</option>
-      <option value="picard">Picard</option>
-      <option value="amazon">Amazon</option>
-      <option value="calidel">Calidel</option>
-      <option value="pharmacie">Pharmacie</option>
-      <option value="action">Action</option>
-      <option value="autre">Autre</option>
-    </select>
+    <div class="edit-modal-body">
+      <h3>✏️ Modifier l'article</h3>
+      <input type="hidden" id="editItemId">
+      <label>Nom</label>
+      <input type="text" id="editItemName" placeholder="Nom de l'article" onkeydown="if(event.key==='Enter')saveEditItem()">
+      <label>Quantité</label>
+      <input type="text" id="editItemQty" placeholder="Ex: 2L, 500g…" onkeydown="if(event.key==='Enter')saveEditItem()">
+      <label>Catégorie</label>
+      <select id="editItemCat">
+        <option value="🐾 Animaux">🐾 Animaux</option>
+        <option value="🍷 Boissons">🍷 Boissons</option>
+        <option value="🥐 Boulangerie">🥐 Boulangerie</option>
+        <option value="🧀 Crèmerie">🧀 Crèmerie</option>
+        <option value="🧹 Entretien">🧹 Entretien</option>
+        <option value="🥫 Épicerie salée">🥫 Épicerie salée</option>
+        <option value="🍬 Épicerie sucrée">🍬 Épicerie sucrée</option>
+        <option value="🥦 Fruits/Légumes">🥦 Fruits/Légumes</option>
+        <option value="🧴 Hygiène">🧴 Hygiène</option>
+        <option value="🔧 Matériel">🔧 Matériel</option>
+        <option value="💊 Parapharmacie">💊 Parapharmacie</option>
+        <option value="🥩 Produits frais/Charcuterie">🥩 Produits frais/Charcuterie</option>
+        <option value="❄️ Surgelés">❄️ Surgelés</option>
+        <option value="🍖 Viande/Poisson">🍖 Viande/Poisson</option>
+        <option value="🛒 Autre">🛒 Autre</option>
+      </select>
+      <label>Magasin habituel</label>
+      <select id="editItemShop">
+        <option value="">🛒 Magasin…</option>
+        <option value="leclerc">Leclerc</option>
+        <option value="intermarche">Intermarché</option>
+        <option value="lidl">Lidl</option>
+        <option value="aldi">Aldi</option>
+        <option value="carrefour">Carrefour</option>
+        <option value="biocoop">Biocoop</option>
+        <option value="picard">Picard</option>
+        <option value="amazon">Amazon</option>
+        <option value="calidel">Calidel</option>
+        <option value="pharmacie">Pharmacie</option>
+        <option value="action">Action</option>
+        <option value="autre">Autre</option>
+      </select>
 
-    <label style="margin-top:10px;">💰 Prix par magasin <span style="font-size:0.75rem;color:#718096;font-weight:400;">(optionnel)</span></label>
-    <div id="editPrixSection" style="display:flex;flex-direction:column;gap:6px;background:#f7fafc;border-radius:10px;padding:10px;">
-      <!-- généré par JS -->
+      <label style="margin-top:10px;">💰 Prix par magasin <span style="font-size:0.75rem;color:#718096;font-weight:400;">(optionnel)</span></label>
+      <div id="editPrixSection" style="display:flex;flex-direction:column;gap:6px;background:#f7fafc;border-radius:10px;padding:10px;">
+        <!-- généré par JS -->
+      </div>
     </div>
-
     <div class="edit-modal-btns">
       <button class="edit-cancel-btn" onclick="closeEditItem()">Annuler</button>
       <button class="edit-save-btn" onclick="saveEditItem()">💾 Enregistrer</button>
