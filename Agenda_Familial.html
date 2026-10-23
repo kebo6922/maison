@@ -69,19 +69,28 @@
   function loadCacheAgenda() {
     try { const d = localStorage.getItem(LS_AGENDA); return d ? JSON.parse(d) : null; } catch(e) { return null; }
   }
-  // Affichage immédiat depuis le cache
-  const _cachedAgenda = loadCacheAgenda();
-  if (_cachedAgenda) { window._tasks = _cachedAgenda; if (typeof renderAll === 'function') renderAll(); }
+  // Cache chargé uniquement si Firebase ne répond pas dans les 5 secondes
+  let _fbAgendaLoaded = false;
+  setTimeout(() => {
+    if (!_fbAgendaLoaded) {
+      const cached = loadCacheAgenda();
+      if (cached && Object.keys(cached).length > 0) {
+        window._tasks = cached;
+        if (typeof renderAll === 'function') renderAll();
+      }
+    }
+  }, 5000);
 
   onValue(tasksRef, (snapshot) => {
+    _fbAgendaLoaded = true;
     window._tasks = {};
     if (snapshot.exists()) {
       snapshot.forEach(child => {
         window._tasks[child.key] = { id: child.key, ...child.val() };
       });
     }
-    // Sauvegarde dans le cache local après chaque synchro Firebase
-    saveCacheAgenda(window._tasks);
+    // Sauvegarde dans le cache local (seulement si données réelles)
+    if (Object.keys(window._tasks).length > 0) saveCacheAgenda(window._tasks);
     renderAll();
   });
 

@@ -74,9 +74,17 @@ if ('serviceWorker' in navigator) {
   function loadCacheCourses() {
     try { const d = localStorage.getItem(LS_COURSES); return d ? JSON.parse(d) : null; } catch(e) { return null; }
   }
-  // Affichage immédiat depuis le cache
-  const _cachedCourses = loadCacheCourses();
-  if (_cachedCourses) { items = _cachedCourses; if (typeof render === 'function') render(); }
+  // Le cache est chargé UNIQUEMENT si Firebase ne répond pas dans les 5 secondes
+  let _firebaseLoaded = false;
+  setTimeout(() => {
+    if (!_firebaseLoaded) {
+      const cached = loadCacheCourses();
+      if (cached && Object.keys(cached).length > 0) {
+        items = cached;
+        if (typeof render === 'function') render();
+      }
+    }
+  }, 5000);
 
   const PERSON_COLORS = {
     Machin: { bg:'#bee3f8', text:'#1a365d', border:'#90cdf4' },
@@ -515,9 +523,11 @@ if ('serviceWorker' in navigator) {
   };
 
   onValue(coursesRef, snap=>{
+    _firebaseLoaded = true;
     items = snap.val()||{};
     // Sauvegarde dans le cache local après chaque synchro Firebase
-    saveCacheCourses(items);
+    // (seulement si Firebase a retourné des données réelles)
+    if (Object.keys(items).length > 0) saveCacheCourses(items);
     // Migration automatique des anciennes catégories
     const migrations = [];
     Object.entries(items).forEach(([id, item]) => {
