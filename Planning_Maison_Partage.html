@@ -148,6 +148,46 @@
     }
   };
 
+  // ── Import restauration JSON ──────────────────────────────────
+  window._importBackup = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        // Vérifie que c'est bien une sauvegarde Maison
+        if (!data.planning_et_agenda && !data.courses) {
+          alert('❌ Ce fichier ne semble pas être une sauvegarde Maison valide.');
+          return;
+        }
+        const date = data.exportDate ? new Date(data.exportDate).toLocaleDateString('fr-FR') : 'inconnue';
+        const par  = data.exportBy || 'inconnu';
+        const ok = confirm(
+          `⚠️ Restauration de la sauvegarde du ${date} (par ${par}).\n\n` +
+          `Cela va REMPLACER toutes les données actuelles de Firebase.\n\n` +
+          `Continuer ?`
+        );
+        if (!ok) return;
+
+        const { set } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+        const ops = [];
+        if (data.planning_et_agenda) ops.push(set(ref(db, 'planning'), data.planning_et_agenda));
+        if (data.courses)            ops.push(set(ref(db, 'maison/courses'), data.courses));
+        if (data.commentaires)       ops.push(set(ref(db, 'maison/comments'), data.commentaires));
+        if (data.connexions)         ops.push(set(ref(db, 'maison/connexions'), data.connexions));
+        await Promise.all(ops);
+        if (typeof toast === 'function') toast('✅ Restauration réussie !', 4000);
+      } catch(e) {
+        alert('Erreur lors de la restauration : ' + e.message);
+      }
+    };
+    input.click();
+  };
+
   // ── Export sauvegarde JSON ────────────────────────────────────
   window._exportBackup = async function() {
     try {
@@ -572,6 +612,7 @@ self.addEventListener('fetch',e=>{
     <button class="btn-hdr" onclick="changePin(currentUser)" title="Changer mon PIN">🔑</button>
     <button class="btn-hdr" onclick="toggleDark()" id="darkBtn">🌙</button>
     <button class="btn-hdr" onclick="window._exportBackup && window._exportBackup()" title="Télécharger une sauvegarde JSON">💾</button>
+    <button class="btn-hdr" onclick="window._importBackup && window._importBackup()" title="Restaurer une sauvegarde JSON">♻️</button>
     <button class="btn-hdr" onclick="openConfig()">⚙</button>
   </div>
 </header>
