@@ -65,6 +65,22 @@
   const db  = getDatabase(app);
   const tasksRef = ref(db, "planning/tasks");
 
+  // ── Cache localStorage pour mode hors ligne ───────────
+  const LS_TASKS = 'maison_cache_tasks';
+  function saveCacheTasks(tasks) {
+    try { localStorage.setItem(LS_TASKS, JSON.stringify(tasks)); } catch(e) {}
+  }
+  function loadCacheTasks() {
+    try { const d = localStorage.getItem(LS_TASKS); return d ? JSON.parse(d) : null; } catch(e) { return null; }
+  }
+
+  // Charge le cache immédiatement (affichage instantané, même hors ligne)
+  const cached = loadCacheTasks();
+  if (cached) {
+    window._tasks = cached;
+    if (typeof render === 'function') render();
+  }
+
   // ── Écoute temps réel ─────────────────────────────────
   onValue(tasksRef, (snapshot) => {
     window._tasks = {};
@@ -73,13 +89,14 @@
         window._tasks[child.key] = { id: child.key, ...child.val() };
       });
     }
+    // Sauvegarde dans le cache local après chaque synchro Firebase
+    saveCacheTasks(window._tasks);
     // Archivage automatique : RDV dont la date est passée → done
     const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
     Object.values(window._tasks).forEach(t => {
       if (t.status === 'rdv' && t.date) {
         const rdvDate = new Date(t.date + 'T00:00:00');
         if (rdvDate < todayMidnight) {
-          // Passer en "done" dans Firebase (silencieux, pas de re-render supplémentaire)
           update(ref(db, `planning/tasks/${t.id}`), { status: 'done' });
         }
       }

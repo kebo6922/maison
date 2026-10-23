@@ -66,6 +66,18 @@ if ('serviceWorker' in navigator) {
   const db  = getDatabase(app);
   const coursesRef = ref(db, 'maison/courses');
 
+  // ── Cache localStorage pour mode hors ligne ───────────
+  const LS_COURSES = 'maison_cache_courses';
+  function saveCacheCourses(data) {
+    try { localStorage.setItem(LS_COURSES, JSON.stringify(data)); } catch(e) {}
+  }
+  function loadCacheCourses() {
+    try { const d = localStorage.getItem(LS_COURSES); return d ? JSON.parse(d) : null; } catch(e) { return null; }
+  }
+  // Affichage immédiat depuis le cache
+  const _cachedCourses = loadCacheCourses();
+  if (_cachedCourses) { items = _cachedCourses; if (typeof render === 'function') render(); }
+
   const PERSON_COLORS = {
     Machin: { bg:'#bee3f8', text:'#1a365d', border:'#90cdf4' },
     Bidule: { bg:'#fc8181', text:'#742a2a', border:'#e53e3e' },
@@ -299,7 +311,16 @@ if ('serviceWorker' in navigator) {
   function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   window.toggleItem = function(id, checked){
-    update(ref(db,'maison/courses/'+id),{done:checked, doneAt: checked ? Date.now() : null, doneBy: checked ? currentUser : null});
+    const now = Date.now();
+    // Écriture Firebase (mise en file d'attente automatique si hors ligne)
+    update(ref(db,'maison/courses/'+id),{done:checked, doneAt: checked ? now : null, doneBy: checked ? currentUser : null});
+    // Mise à jour immédiate du cache local → survit à la fermeture de page sans réseau
+    if (items[id]) {
+      items[id].done   = checked;
+      items[id].doneAt = checked ? now : null;
+      items[id].doneBy = checked ? currentUser : null;
+      saveCacheCourses(items);
+    }
   };
   window.deleteItem = function(id){
     remove(ref(db,'maison/courses/'+id));
@@ -495,6 +516,8 @@ if ('serviceWorker' in navigator) {
 
   onValue(coursesRef, snap=>{
     items = snap.val()||{};
+    // Sauvegarde dans le cache local après chaque synchro Firebase
+    saveCacheCourses(items);
     // Migration automatique des anciennes catégories
     const migrations = [];
     Object.entries(items).forEach(([id, item]) => {

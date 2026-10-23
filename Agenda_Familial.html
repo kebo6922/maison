@@ -61,6 +61,18 @@
   // Même nœud que le planning maison → données partagées
   const tasksRef = ref(db, "planning/tasks");
 
+  // ── Cache localStorage pour mode hors ligne ───────────
+  const LS_AGENDA = 'maison_cache_tasks'; // même clé que Planning (même données)
+  function saveCacheAgenda(tasks) {
+    try { localStorage.setItem(LS_AGENDA, JSON.stringify(tasks)); } catch(e) {}
+  }
+  function loadCacheAgenda() {
+    try { const d = localStorage.getItem(LS_AGENDA); return d ? JSON.parse(d) : null; } catch(e) { return null; }
+  }
+  // Affichage immédiat depuis le cache
+  const _cachedAgenda = loadCacheAgenda();
+  if (_cachedAgenda) { window._tasks = _cachedAgenda; if (typeof renderAll === 'function') renderAll(); }
+
   onValue(tasksRef, (snapshot) => {
     window._tasks = {};
     if (snapshot.exists()) {
@@ -68,6 +80,8 @@
         window._tasks[child.key] = { id: child.key, ...child.val() };
       });
     }
+    // Sauvegarde dans le cache local après chaque synchro Firebase
+    saveCacheAgenda(window._tasks);
     renderAll();
   });
 
